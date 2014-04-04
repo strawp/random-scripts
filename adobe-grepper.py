@@ -31,12 +31,14 @@ def parsevalue(val):
 emaillist = []
 
 print( 'Searching for '+args.term+' in '+args.creds+'...' )
+sys.stdout.flush()
 
 # First pass - get instances of term
 result = subprocess.check_output( 'grep "' + args.term + '" ' + args.creds, shell=True )
 
 print( 'Found ' + str(len(result.strip().split('\n'))) + ' results in search' )
 print( result )
+sys.stdout.flush()
 
 for line in result.split('\n'):
   line = line.strip()
@@ -53,12 +55,15 @@ for info in emaillist:
       passwords[info['pass']] = []
 
 print( 'Searching for shared passwords...' )
+sys.stdout.flush()
 
 # Iterate over passwords, finding all other people who have that password
 for password in passwords.keys():
   print( 'Searching for ' + password + '...' )
+  sys.stdout.flush()
   result = subprocess.check_output('grep "' + password + '" ' + args.creds, shell=True )
   print( 'Found ' + str(len(result.strip().split('\n'))) + ' uses' )
+  sys.stdout.flush()
   for line in result.split('\n'):
     line = line.strip()
     if line == '':
@@ -68,12 +73,15 @@ for password in passwords.keys():
 print('')
 print('Email addresses:')
 print('================')
+sys.stdout.flush()
 for person in emaillist:
   print(person['email'])
+  sys.stdout.flush()
 
 print('')
 print('Results:')
 print('========')
+sys.stdout.flush()
 
 # Iterate over all people and output relevant password hints
 for person in emaillist:
@@ -83,5 +91,6 @@ for person in emaillist:
   print( person['email'] + ': ' + person['pass'] + ' ('+str(len(passwords[person['pass']]))+')' )
   for hint in passwords[person['pass']]:
     print( '  ' + hint['email'] + ': ' + hint['hint'] )
+    sys.stdout.flush()
 
 
