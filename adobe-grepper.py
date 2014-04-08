@@ -59,6 +59,8 @@ sys.stdout.flush()
 
 # Iterate over passwords, finding all other people who have that password
 for password in passwords.keys():
+  if password == 'password':
+    continue
   print( 'Searching for ' + password + '...' )
   sys.stdout.flush()
   result = subprocess.check_output('grep "' + password + '" ' + args.creds, shell=True )
@@ -88,7 +90,14 @@ for person in emaillist:
   if person['pass'] == '':
     continue;
   print('')
-  print( person['email'] + ': ' + person['pass'] + ' ('+str(len(passwords[person['pass']]))+')' )
+  extra = ''
+  if len( person['pass'] ) == 12:
+    extra += ' length <= 7'
+  elif 'ioxG6CatHBw==' in person['pass']:
+    extra += ' length == 8'
+  else:
+    extra += ' length > 8'
+  print( person['email'] + ': ' + person['pass'] + extra + ' ('+str(len(passwords[person['pass']]))+')' )
   for hint in passwords[person['pass']]:
     print( '  ' + hint['email'] + ': ' + hint['hint'] )
     sys.stdout.flush()
