@@ -15,6 +15,7 @@ parser.add_argument("-m", "--maxlen", help="Maximum length of passwords")
 parser.add_argument("-e", "--excludelist", help="Exclude items from the specified word list")
 parser.add_argument("-u", "--upper", action="store_true", help="Must contain an uppercase character")
 parser.add_argument("-L", "--lower", action="store_true", help="Must contain a lowercase character")
+parser.add_argument("-a", "--letter", action="store_true", help="Must contain an upper or lower case letter")
 parser.add_argument("-n", "--numbers", action="store_true", help="Must contain a number")
 parser.add_argument("-s", "--special", action="store_true", help="Must contain at least one special (non-alphanumeric) character")
 parser.add_argument("-S", "--specupnum", action="store_true", help="Must contain at least one special character, uppercase character or number")
@@ -48,6 +49,9 @@ if args.upper:
 
 if args.lower:
   pipes.append( 'grep "[a-z]"' )
+
+if args.letter:
+  pipes.append( 'grep "[A-Za-z]"' )
 
 if args.numbers:
   pipes.append( 'grep "[0-9]"' )
