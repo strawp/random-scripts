@@ -2,6 +2,10 @@
 # Send an HTML email to all addresses in a txt file
 
 import smtplib, getopt, datetime, re
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText 
+from email.mime.image import MIMEImage
+
 
 def main(argv):
 	emailsfile = ''
@@ -29,6 +33,7 @@ def main(argv):
 	print 'Subject: ', subject
 	print 'From: ', fromheader
 	namematch = re.compile( "\w{2,}\.\w{2,}" )
+	attachmentmatch = re.compile( 'src="cid:([^"]+)"' )
 
 	# Read in body
 	with open (bodyfile,"r") as file:
@@ -41,6 +46,8 @@ def main(argv):
 	# Loop over emails
 	for email in emails:
 		
+		msg = MIMEMultipart()
+
 		email = email.strip()
 		name = email.split('@')[0]
 		if namematch.match( name ):
@@ -49,15 +56,31 @@ def main(argv):
 			name = ''
 
 		# Compile header
-		header = "From: " + fromheader + "\r\nTo: " + email + "\r\nContent-Type: text/html; charset=UTF-8\r\nSubject: " + subject + "\r\n\r\n"
+		msg["From"] = fromheader
+		msg["To"] = email
+		msg["Subject"] = subject
+
+		# header = "From: " + fromheader + "\r\nTo: " + email + "\r\nContent-Type: text/html; charset=UTF-8\r\nSubject: " + subject + "\r\n\r\n"
 
 		# Compile body
 		body = data.replace("{name}", name ).replace("{email}", email).replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))
-		
+		msgText = MIMEText( body, "html" )
+		msg.attach(msgText)
+
+		# Find any attachments and attach
+		attachments = re.findall('src="cid:([^"]+)"',body)
+		for attachment in attachments:
+			fp = open( attachment, "rb" )
+			img = MIMEImage(fp.read())
+			fp.close()
+			img.add_header('Content-ID', attachment )
+			msg.attach(img)
+
+
 		# Send email
 		server = smtplib.SMTP('localhost')
 		server.set_debuglevel(1)
-		server.sendmail( fromheader, email, header + body )
+		server.sendmail( fromheader, email, msg.as_string() )
 		server.quit()
 	
 if __name__ == "__main__":
