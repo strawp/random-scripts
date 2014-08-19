@@ -10,7 +10,9 @@ import re
 
 def test_login( username, password, url ):
   global args
-  print "[*] Testing " + username + " : " + password + " at " + url
+  username = username.strip()
+  password = password.strip()
+  print "[*] Testing " + username + " : " + password 
   cmd = "curl -s -I --ntlm --user " + username + ":" + password + " -k " + url
   out = subprocess.check_output( cmd, shell=True )
   m = re.match( "HTTP\/1.\d (\d{3})", out )
