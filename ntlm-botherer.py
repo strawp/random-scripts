@@ -75,6 +75,11 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
   if args.passlist:
     print "Password list"
     fp = open( args.passlist, "r" )
+    if args.user:  
+      if args.same:
+        test_login( args.user, args.user, url.geturl() )
+      if args.blank:
+        test_login( args.user, '', url.geturl() )
     for p in fp:
       if args.userlist:
         fu = open( args.userlist, "r" )
@@ -89,10 +94,6 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
       else:
         # One user, many passwords
         test_login( args.user, p, url.geturl() )
-        if args.same:
-          test_login( args.user, args.user, url.geturl() )
-        if args.blank:
-          test_login( args.user, '', url.geturl() )
     fp.close()
   elif args.userlist:
     print "User list"
