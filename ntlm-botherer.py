@@ -14,7 +14,7 @@ def test_login( username, password, url ):
   password = password.strip()
   print "[*] Testing " + username + " : " + password 
   cmd = "curl -s -I --ntlm --user " + username + ":" + password + " -k " + url
-  out = subprocess.check_output( cmd, shell=True )
+  out = subprocess.check_output( ["curl", "-s", "-I", "--ntlm", "--user", username + ":" + password, "-k", url] )
   m = re.match( "HTTP\/1.\d (\d{3})", out )
   if m.group(1) != "401":
     print "[+] FOUND: " + username + " : " + password
