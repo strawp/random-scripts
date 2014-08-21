@@ -13,14 +13,15 @@ def test_login( username, password, url ):
   username = username.strip()
   password = password.strip()
   print "[*] Testing " + username + " : " + password 
-  cmd = "curl -s -I --ntlm --user " + username + ":" + password + " -k " + url
+  # cmd = "curl -s -I --ntlm --user " + username + ":" + password + " -k " + url
   out = subprocess.check_output( ["curl", "-s", "-I", "--ntlm", "--user", username + ":" + password, "-k", url] )
-  m = re.match( "HTTP\/1.\d (\d{3})", out )
-  if m.group(1) != "401":
-    print "[+] FOUND: " + username + " : " + password
-    if args.quitonsuccess:
-      sys.exit(0)
-    return True
+  m = re.findall( "HTTP\/1.\d (\d{3})", out )
+  for code in m:
+    if code != "401":
+      print "[+] FOUND: " + username + " : " + password
+      if args.quitonsuccess:
+        sys.exit(0)
+      return True
   return False
   
 
@@ -107,7 +108,7 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
     if args.blank:
       test_login( args.user, '', url.geturl() )
     if args.same:
-      test_login( u, u, url.geturl() )
+      test_login( args.user, args.user, url.geturl() )
     test_login( args.user, args.password, url.geturl() )
  
 print "Done"

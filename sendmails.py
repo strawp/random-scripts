@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # Send an HTML email to all addresses in a txt file
 
-import argparse
-import sys
-import smtplib, getopt, datetime, re
+import argparse, sys, smtplib, datetime, re
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText 
 from email.mime.image import MIMEImage
