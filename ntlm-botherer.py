@@ -9,7 +9,7 @@ from urlparse import urlparse
 import re
 
 def test_login( username, password, url ):
-  global args
+  global args, found
   username = username.strip()
   password = password.strip()
   print "[*] Testing " + username + " : " + password 
@@ -19,6 +19,7 @@ def test_login( username, password, url ):
   for code in m:
     if code != "401":
       print "[+] FOUND: " + username + " : " + password
+      found.append( username + " : " + password )
       if args.quitonsuccess:
         sys.exit(0)
       return True
@@ -51,6 +52,8 @@ if not url.port:
     port = 80
 else:
   port = url.port
+
+found = []
 
 print 'Running against ' + url.geturl()
 
@@ -111,4 +114,6 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
       test_login( args.user, args.user, url.geturl() )
     test_login( args.user, args.password, url.geturl() )
  
+print "Found:\n - " + "\n - ".join(found)
+
 print "Done"
