@@ -114,6 +114,6 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
       test_login( args.user, args.user, url.geturl() )
     test_login( args.user, args.password, url.geturl() )
  
-print "Found:\n - " + "\n - ".join(found)
+if len( found ) > 0: print "Found:\n - " + "\n - ".join(found)
 
 print "Done"
