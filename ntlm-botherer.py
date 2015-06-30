@@ -9,9 +9,14 @@ from urlparse import urlparse
 import re
 
 def test_login( username, password, url ):
-  global args, found
+  global args, found, foundusers
   username = username.strip()
   password = password.strip()
+  
+  # Skip this attempt if we already have credentials for this user
+  if username in foundusers:
+    return False
+
   print "[*] Testing " + username + " : " + password 
   # cmd = "curl -s -I --ntlm --user " + username + ":" + password + " -k " + url
   out = subprocess.check_output( ["curl", "-s", "-I", "--ntlm", "--user", username + ":" + password, "-k", url] )
@@ -20,6 +25,7 @@ def test_login( username, password, url ):
     if code != "401":
       print "[+] FOUND: " + username + " : " + password
       found.append( username + " : " + password )
+      foundusers.append( username )
       if args.quitonsuccess:
         sys.exit(0)
       return True
@@ -54,6 +60,7 @@ else:
   port = url.port
 
 found = []
+foundusers = []
 
 print 'Running against ' + url.geturl()
 
