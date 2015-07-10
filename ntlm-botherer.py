@@ -7,6 +7,7 @@ import os.path
 import subprocess
 from urlparse import urlparse
 import re
+import time
 
 def test_login( username, password, url ):
   global args, found, foundusers
@@ -28,7 +29,12 @@ def test_login( username, password, url ):
       foundusers.append( username )
       if args.quitonsuccess:
         sys.exit(0)
+      if args.delay:
+        time.sleep(args.delay)
       return True
+  
+  if args.delay:
+    time.sleep(args.delay)
   return False
   
 
@@ -38,6 +44,7 @@ parser.add_argument("-U", "--userlist", help="Username list to dictionary attack
 parser.add_argument("-p", "--password", help="Password to dictionary attack as")
 parser.add_argument("-d", "--domain", help="NTLM domain name to attack")
 parser.add_argument("-P", "--passlist", help="Password list to dictionary attack as")
+parser.add_argument("-D", "--delay", help="Delay between each attempt, in seconds")
 parser.add_argument("-i", "--info", action="store_true", help="Exploit NTLM info leak")
 parser.add_argument("-l", "--login", action="store_true", help="Test logins (requires username and passwords)")
 parser.add_argument("-s", "--same", action="store_true", help="Try password=username")
@@ -49,6 +56,9 @@ args = parser.parse_args()
 if not args.url:
   parser.print_usage()
   sys.exit(2)
+
+if args.delay:
+  args.delay = int(args.delay)
 
 url = urlparse(args.url)
 if not url.port:
@@ -86,10 +96,22 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
   if args.passlist:
     print "Password list"
     fp = open( args.passlist, "r" )
-    if args.same:
-      test_login( args.user, args.user, url.geturl() )
-    if args.blank:
-      test_login( args.user, '', url.geturl() )
+    
+    if args.user:
+      if args.same:
+        test_login( args.user, args.user, url.geturl() )
+      if args.blank:
+        test_login( args.user, '', url.geturl() )
+    elif args.userlist:
+      fu = open( args.userlist, "r" )
+      for u in fu:
+        # Loop over blank / same for when multiple passes and users
+        if args.same:
+          test_login( u, u, url.geturl() )
+        if args.blank:
+          test_login( u, '', url.geturl() )
+      fu.close()
+
     for p in fp:
       if args.userlist:
         fu = open( args.userlist, "r" )
