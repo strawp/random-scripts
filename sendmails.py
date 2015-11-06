@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Send an HTML email to all addresses in a txt file
 
-import argparse, sys, smtplib, datetime, re, os
+import argparse, sys, smtplib, datetime, re, os, random, base64
 from email import Encoders
 from email.MIMEBase import MIMEBase
 from email.mime.application import MIMEApplication
@@ -82,7 +82,13 @@ for email in emails:
   # header = "From: " + fromheader + "\r\nTo: " + email + "\r\nContent-Type: text/html; charset=UTF-8\r\nSubject: " + subject + "\r\n\r\n"
 
   # Compile body
-  body = data.replace("{name}", name ).replace("{email}", email).replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))
+  body = data.replace("{name}", name ).replace("{email}", email).replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y")).replace("{b64email}",base64.b64encode(email))
+  if re.search("{randomint}",body):
+    ri = random.randint(1,9999999)
+    print "Random integer: " + email + " : " + str(ri)
+    body = body.replace("{randomint}",str(ri))
+
+  print body
   msgText = MIMEText( body, "html" )
   msg.attach(msgText)
 
