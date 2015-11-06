@@ -88,7 +88,6 @@ for email in emails:
     print "Random integer: " + email + " : " + str(ri)
     body = body.replace("{randomint}",str(ri))
 
-  print body
   msgText = MIMEText( body, "html" )
   msg.attach(msgText)
 
