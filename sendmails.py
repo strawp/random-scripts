@@ -94,13 +94,16 @@ for email in emails:
   else:
     name = ''
 
+  fname = name.split(' ')[0]
+  lname = name.split(' ')[1]
+
   # Compile header
   msg["From"] = fromheader
   msg["To"] = email
   msg["Subject"] = subject
 
   # Compile body
-  body = data.replace("{name}", name ).replace("{email}", email).replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y")).replace("{b64email}",base64.b64encode(email))
+  body = data.replace("{name}", name ).replace("{fname}", fname ).replace("{lname}", lname ).replace("{email}", email).replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y")).replace("{b64email}",base64.b64encode(email))
   if re.search("{randomint}",body):
     ri = random.randint(1,9999999)
     print "Random integer: " + email + " : " + str(ri)
