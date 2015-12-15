@@ -13,6 +13,7 @@ import time
 
 parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
 parser.add_argument("-e", "--emails", help="File containing list of email addresses")
+parser.add_argument("-E", "--email", help="Single email address to send to")
 parser.add_argument("-b", "--body", help="File containing HTML body of email")
 parser.add_argument("-s", "--subject", help="Subject line of email")
 parser.add_argument("-f", "--fromheader", help="From address")
@@ -24,7 +25,11 @@ parser.add_argument("-d", "--delay", help="Delay between mail sends (seconds)")
 parser.add_argument("-a", "--attachment", help="Filename to add as an attachment")
 args = parser.parse_args()
 
-if not args.emails or not args.body or not args.subject or not args.fromheader:
+if not args.body or not args.subject or not args.fromheader:
+  parser.print_usage()
+  sys.exit(2)
+
+if not args.emails and not args.email:
   parser.print_usage()
   sys.exit(2)
 
@@ -41,12 +46,16 @@ if args.attachment:
   if not os.path.isfile(args.attachment):
     print 'Path to attachment ' + args.attachment + ' not found'
 
-emailsfile = args.emails
+if args.emails:
+  emailsfile = args.emails
+  print 'Emails file: ', emailsfile
+else:
+  print 'Email: ', args.email
+
 bodyfile = args.body
 subject = args.subject
 fromheader = args.fromheader
 
-print 'Emails file: ', emailsfile
 print 'Body text file: ', bodyfile
 print 'Subject: ', subject
 print 'From: ', fromheader
@@ -59,8 +68,19 @@ with open (bodyfile,"r") as file:
   data = file.read().replace('\n','')
 
 # Read in emails
-with open(emailsfile) as f:
-  emails = f.readlines()
+if args.emails:
+  with open(emailsfile) as f:
+    emails = f.readlines()
+else:
+  emails = []
+  emails.append(args.email)
+
+# Connect
+if not args.host:
+  server = smtplib.SMTP('localhost')
+else:
+  server = smtplib.SMTP(args.host, args.port)
+  server.login(args.username, args.password)
 
 # Loop over emails
 for email in emails:
@@ -78,8 +98,6 @@ for email in emails:
   msg["From"] = fromheader
   msg["To"] = email
   msg["Subject"] = subject
-
-  # header = "From: " + fromheader + "\r\nTo: " + email + "\r\nContent-Type: text/html; charset=UTF-8\r\nSubject: " + subject + "\r\n\r\n"
 
   # Compile body
   body = data.replace("{name}", name ).replace("{email}", email).replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y")).replace("{b64email}",base64.b64encode(email))
@@ -111,15 +129,9 @@ for email in emails:
     msg.attach(part)
 
   # Send email
-  if not args.host:
-    server = smtplib.SMTP('localhost')
-  else:
-    server = smtplib.SMTP(args.host, args.port)
-    server.login(args.username, args.password)
-  
   server.sendmail( fromheader, email, msg.as_string() )
-  server.quit()
 
   if args.delay:
     time.sleep(args.delay)
 	
+server.quit()
