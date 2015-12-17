@@ -97,6 +97,9 @@ for email in emails:
   if len(name.split(' ')) >= 2:
     fname = name.split(' ')[0]
     lname = name.split(' ')[1]
+  else:
+    fname = ''
+    lname = ''
 
   # Compile header
   msg["From"] = fromheader
