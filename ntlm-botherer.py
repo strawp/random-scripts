@@ -8,6 +8,7 @@ import subprocess
 from urlparse import urlparse
 import re
 import time
+import signal
 
 def test_login( username, password, url ):
   global args, found, foundusers
@@ -36,7 +37,17 @@ def test_login( username, password, url ):
   if args.delay:
     time.sleep(args.delay)
   return False
-  
+
+def show_found():
+  if len( found ) > 0: print "Found:\n - " + "\n - ".join(found)
+  else: print "No creds found :(" 
+
+def cancel_handler(signal,frame):
+  print "Caught ctrl-c, quitting..."
+  show_found()
+  sys.exit(0)
+
+signal.signal(signal.SIGINT, cancel_handler)
 
 parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
 parser.add_argument("-u", "--user", help="Username to dictionary attack as")
@@ -46,7 +57,6 @@ parser.add_argument("-d", "--domain", help="NTLM domain name to attack")
 parser.add_argument("-P", "--passlist", help="Password list to dictionary attack as")
 parser.add_argument("-D", "--delay", help="Delay between each attempt, in seconds")
 parser.add_argument("-i", "--info", action="store_true", help="Exploit NTLM info leak")
-parser.add_argument("-l", "--login", action="store_true", help="Test logins (requires username and passwords)")
 parser.add_argument("-s", "--same", action="store_true", help="Try password=username")
 parser.add_argument("-b", "--blank", action="store_true", help="Try blank password")
 parser.add_argument("-1", "--quitonsuccess", action="store_true", help="Stop as soon as the first credential is found")
@@ -143,6 +153,6 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
       test_login( args.user, args.user, url.geturl() )
     test_login( args.user, args.password, url.geturl() )
  
-if len( found ) > 0: print "Found:\n - " + "\n - ".join(found)
+  show_found()
 
 print "Done"
