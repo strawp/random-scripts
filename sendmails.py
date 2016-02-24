@@ -107,7 +107,14 @@ for email in emails:
   msg["Subject"] = subject
 
   # Compile body
-  body = data.replace("{name}", name ).replace("{fname}", fname ).replace("{lname}", lname ).replace("{email}", email).replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y")).replace("{b64email}",base64.b64encode(email))
+  body = data.replace("{name}", name )\
+    .replace("{fname}", fname )\
+    .replace("{lname}", lname )\
+    .replace("{email}", email)\
+    .replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
+    .replace("{b64email}",base64.b64encode(email))\
+    .replace("{b64remail}",base64.b64encode(email)[::-1])
+
   if re.search("{randomint}",body):
     ri = random.randint(1,9999999)
     print "Random integer: " + email + " : " + str(ri)
@@ -135,8 +142,14 @@ for email in emails:
     part.add_header('Content-Disposition', 'attachment; filename="'+filename+'"')
     msg.attach(part)
 
+  # print msg.as_string()
+
   # Send email
+  sys.stdout.write( "Sending to " + email + "... " )
+  sys.stdout.flush()
   server.sendmail( fromheader, email, msg.as_string() )
+  sys.stdout.write( "sent\n" )
+  sys.stdout.flush()
 
   if args.delay:
     time.sleep(args.delay)
