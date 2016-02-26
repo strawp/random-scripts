@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # Send an HTML email to all addresses in a txt file
 
-import argparse, sys, smtplib, datetime, re, os, random, base64
+import argparse, sys, smtplib, datetime, re, os, random, base64, time, html2text
 from email import Encoders
 from email.MIMEBase import MIMEBase
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText 
 from email.mime.image import MIMEImage
-import time
 
 
 parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
@@ -120,8 +119,8 @@ for email in emails:
     print "Random integer: " + email + " : " + str(ri)
     body = body.replace("{randomint}",str(ri))
 
-  msgText = MIMEText( body, "html" )
-  msg.attach(msgText)
+  msg.attach(MIMEText( body, "html" ))
+  msg.attach(MIMEText(html2text.html2text(body),'plain'))
 
   # Find any embedded images and attach
   attachments = re.findall('src="cid:([^"]+)"',body)
