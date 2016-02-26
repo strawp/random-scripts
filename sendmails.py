@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTL
 parser.add_argument("-e", "--emails", help="File containing list of email addresses")
 parser.add_argument("-E", "--email", help="Single email address to send to")
 parser.add_argument("-b", "--body", help="File containing HTML body of email")
+parser.add_argument("-t", "--text", action="store_true", help="Add a plain text part to the email converted from the HTML body (use if the target mail client doesn't display HTML inline, e.g. IBM Notes might not)")
 parser.add_argument("-s", "--subject", help="Subject line of email")
 parser.add_argument("-f", "--fromheader", help="From address")
 parser.add_argument("-g", "--host", help="SMTP host")
@@ -120,7 +121,8 @@ for email in emails:
     body = body.replace("{randomint}",str(ri))
 
   msg.attach(MIMEText( body, "html" ))
-  msg.attach(MIMEText(html2text.html2text(body),'plain'))
+  if args.text:
+    msg.attach(MIMEText(html2text.html2text(body),'plain'))
 
   # Find any embedded images and attach
   attachments = re.findall('src="cid:([^"]+)"',body)
