@@ -16,7 +16,8 @@ parser.add_argument("-E", "--email", help="Single email address to send to")
 parser.add_argument("-b", "--body", help="File containing HTML body of email")
 parser.add_argument("-t", "--text", action="store_true", help="Add a plain text part to the email converted from the HTML body (use if the target mail client doesn't display HTML inline, e.g. IBM Notes might not)")
 parser.add_argument("-s", "--subject", help="Subject line of email")
-parser.add_argument("-f", "--fromheader", help="From address")
+parser.add_argument("-f", "--fromheader", help="From address (address or 'name <address>')")
+parser.add_argument("-r", "--readreceipt", help="Read receipt address (same format as from/to headers")
 parser.add_argument("-g", "--host", help="SMTP host")
 parser.add_argument("-P", "--port", help="SMTP port")
 parser.add_argument("-u", "--username", help="SMTP username")
@@ -105,6 +106,9 @@ for email in emails:
   msg["From"] = fromheader
   msg["To"] = email
   msg["Subject"] = subject
+  if args.readreceipt: 
+    print 'Adding read receipt header: ' + args.readreceipt
+    msg["Disposition-Notification-To"] = args.readreceipt
 
   # Compile body
   body = data.replace("{name}", name )\
