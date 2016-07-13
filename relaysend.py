@@ -7,7 +7,7 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 
 
-parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
+parser = argparse.ArgumentParser(description="Test if an SMTP service supports open relay")
 parser.add_argument("-t", "--toheader", help="To address")
 parser.add_argument("-f", "--fromheader", help="From address")
 parser.add_argument("-g", "--host", help="SMTP host")
