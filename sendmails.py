@@ -34,11 +34,11 @@ if not args.emails and not args.email:
   parser.print_usage()
   sys.exit(2)
 
-if args.host and ( not args.username and not args.password ):
-  print 'Username and password required when specifying host'
-  sys.exit(2)
-  if not args.port:
-    args.port = 587
+# if args.host and ( not args.username and not args.password ):
+#   print 'Username and password required when specifying host'
+#   sys.exit(2)
+#   if not args.port:
+#     args.port = 587
 
 if args.delay:
   args.delay = int( args.delay )
@@ -81,7 +81,8 @@ if not args.host:
   server = smtplib.SMTP('localhost')
 else:
   server = smtplib.SMTP(args.host, args.port)
-  server.login(args.username, args.password)
+  if args.username and args.password: 
+    server.login(args.username, args.password)
 
 # Loop over emails
 for email in emails:
