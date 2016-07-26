@@ -84,6 +84,9 @@ else:
   if args.username and args.password: 
     server.login(args.username, args.password)
 
+randomints = False
+intsfile = "randomints.txt"
+
 # Loop over emails
 for email in emails:
   
@@ -124,6 +127,10 @@ for email in emails:
     ri = random.randint(1,9999999)
     print "Random integer: " + email + " : " + str(ri)
     body = body.replace("{randomint}",str(ri))
+    randomints = True
+    fp = open(intsfile,"a")
+    re.write(email + ":" + str(ri) )
+    fp.close()
 
   msg.attach(MIMEText( body, "html" ))
   if args.text:
@@ -161,3 +168,6 @@ for email in emails:
     time.sleep(args.delay)
 	
 server.quit()
+
+if randomints:
+  print "Assigned random ints saved to " + intsfile
