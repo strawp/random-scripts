@@ -18,9 +18,11 @@ parser.add_argument("-L", "--lower", action="store_true", help="Must contain a l
 parser.add_argument("-a", "--letter", action="store_true", help="Must contain an upper or lower case letter")
 parser.add_argument("-n", "--numbers", action="store_true", help="Must contain a number")
 parser.add_argument("-s", "--special", action="store_true", help="Must contain at least one special (non-alphanumeric) character")
+parser.add_argument("-N", "--specnum", action="store_true", help="Must contain at least one special character or number")
 parser.add_argument("-S", "--specupnum", action="store_true", help="Must contain at least one special character, uppercase character or number")
 parser.add_argument("-f", "--firstupper", action="store_true", help="First character is uppercase")
 parser.add_argument("-r", "--norepeat", action="store_true", help="No repeating characters")
+parser.add_argument("-w", "--windows", action="store_true", help="Same as '-l 8 -u -L -N' to approximately match Windows minimum password complexity requirements: 8 chars, at least 3 of upper, lower, number, special, unicode")
 parser.add_argument("dictionary", help="Input dictionary file")
 args = parser.parse_args()
 
@@ -34,6 +36,12 @@ if not os.path.isfile( args.dictionary ):
 
 # Work out grep pipes
 pipes.append( 'cat ' + args.dictionary )
+
+if args.windows:
+  args.len = 8
+  args.upper = True
+  args.lower = True
+  args.specnum = True
 
 if args.len:
   pipes.append( 'grep "^.\{'+str(int(args.len))+',\}$"' )
@@ -59,6 +67,9 @@ if args.numbers:
 if args.special:
   pipes.append( 'grep "[^a-zA-Z0-9]"' )
 
+if args.specnum:
+  pipes.append( 'grep "\([^a-zA-Z0-9]\|[0-9]\)"' )
+
 if args.specupnum:
   pipes.append( 'grep "\([^a-zA-Z0-9]\|[0-9]\|[A-Z]\)"' )
 
@@ -67,6 +78,7 @@ if args.firstupper:
 
 if args.norepeat:
   pipes.append( 'grep -v "\(.\)\\1"' )
+
 
 # Construct command
 cmd = " | ".join(pipes)
