@@ -93,7 +93,8 @@ for email in emails:
   msg = MIMEMultipart()
 
   email = email.strip()
-  name = email.split('@')[0]
+  user = email.split('@')[0]
+  name = user
   if namematch.match( name ):
     name = name.replace("."," ").title()
   else:
@@ -119,6 +120,7 @@ for email in emails:
     .replace("{fname}", fname )\
     .replace("{lname}", lname )\
     .replace("{email}", email)\
+    .replace("{username}", user)\
     .replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
     .replace("{b64email}",base64.b64encode(email))\
     .replace("{b64remail}",base64.b64encode(email)[::-1])
@@ -129,7 +131,7 @@ for email in emails:
     body = body.replace("{randomint}",str(ri))
     randomints = True
     fp = open(intsfile,"a")
-    re.write(email + ":" + str(ri) )
+    fp.write(email + ":" + str(ri)+'\n' )
     fp.close()
 
   msg.attach(MIMEText( body, "html" ))
