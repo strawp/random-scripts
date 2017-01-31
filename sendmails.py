@@ -8,7 +8,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText 
 from email.mime.image import MIMEImage
-
+from email.header import Header
 
 parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
 parser.add_argument("-e", "--emails", help="File containing list of email addresses")
@@ -54,7 +54,7 @@ else:
   print 'Email: ', args.email
 
 bodyfile = args.body
-subject = args.subject
+subject = Header( args.subject, 'utf-8' )
 fromheader = args.fromheader
 
 print 'Body text file: ', bodyfile
@@ -84,12 +84,17 @@ else:
   if args.username and args.password: 
     server.login(args.username, args.password)
 
+# Dictionary of used id's
+usedints = dict()
 randomints = False
 intsfile = "randomints.txt"
 
+
 # Loop over emails
 for email in emails:
-  
+  if len(email) == 0 or not '@' in email:
+    continue  
+
   msg = MIMEMultipart()
 
   email = email.strip()
@@ -124,15 +129,38 @@ for email in emails:
     .replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
     .replace("{b64email}",base64.b64encode(email))\
     .replace("{b64remail}",base64.b64encode(email)[::-1])
+  
 
   if re.search("{randomint}",body):
-    ri = random.randint(1,9999999)
-    print "Random integer: " + email + " : " + str(ri)
+    while True:
+      ri = "%d" % random.randint() 
+      if not ri in usedints:
+        break
+    usedints[ri] = 1
+    print "Randomint integer: " + email + " : " + ri
     body = body.replace("{randomint}",str(ri))
     randomints = True
     fp = open(intsfile,"a")
-    fp.write(email + ":" + str(ri)+'\n' )
+    intmail = email + ": Random integer :" + ri + '\n'
+    fp.write(intmail)
     fp.close()
+
+  #for captcha images i.e 000001.png
+  if re.search("{randomintpadded}",body):
+    while True:
+      #replace with padded integer for example "000001"
+      ri = "%.6d" % random.randint(0,1000)
+      if not ri in usedints:
+        break
+    usedints[ri] = 1
+    print "Random padded integer: " + email + " : " +  ri
+    body = body.replace("{randomintpadded}",str(ri))
+    randomints = True
+    fp = open(intsfile,"a")
+    intmail = email + ": Random padded integer : " + ri + '\n'
+    fp.write(intmail)
+    fp.close()
+
 
   msg.attach(MIMEText( body, "html" ))
   if args.text:
@@ -168,7 +196,7 @@ for email in emails:
 
   if args.delay:
     time.sleep(args.delay)
-	
+    
 server.quit()
 
 if randomints:
