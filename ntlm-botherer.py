@@ -21,21 +21,24 @@ def test_login( username, password, url ):
 
   print "[*] Testing " + username + " : " + password 
   # cmd = "curl -s -I --ntlm --user " + username + ":" + password + " -k " + url
-  out = subprocess.check_output( ["curl", "-s", "-I", "--ntlm", "--user", username + ":" + password, "-k", url] )
-  m = re.findall( "HTTP\/1.\d (\d{3})", out )
-  for code in m:
-    if code != "401":
-      print "[+] FOUND: " + username + " : " + password
-      found.append( username + " : " + password )
-      foundusers.append( username )
-      if args.quitonsuccess:
-        sys.exit(0)
-      if args.delay:
-        time.sleep(args.delay)
-      return True
-  
-  if args.delay:
-    time.sleep(args.delay)
+  try:
+    out = subprocess.check_output( ["curl", "-s", "-I", "--ntlm", "--user", username + ":" + password, "-k", url] )
+    m = re.findall( "HTTP\/1.\d (\d{3})", out )
+    for code in m:
+      if code != "401":
+        print "[+] FOUND: " + username + " : " + password
+        found.append( username + " : " + password )
+        foundusers.append( username )
+        if args.quitonsuccess:
+          sys.exit(0)
+        if args.delay:
+          time.sleep(args.delay)
+        return True
+    
+    if args.delay:
+      time.sleep(args.delay)
+  except:
+    print 'ERROR: curl call failed'
   return False
 
 def show_found():
