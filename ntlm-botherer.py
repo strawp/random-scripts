@@ -37,8 +37,8 @@ def test_login( username, password, url ):
     
     if args.delay:
       time.sleep(args.delay)
-  except KeyboardInterrupt:
-    cancel_handler()
+  except SystemExit:
+    raise
   except:
     print 'ERROR: curl call failed'
   return False
