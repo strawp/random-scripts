@@ -37,7 +37,9 @@ def test_login( username, password, url ):
     
     if args.delay:
       time.sleep(args.delay)
-  except:
+  except KeyboardInterrupt:
+    cancel_handler()
+  else:
     print 'ERROR: curl call failed'
   return False
 
@@ -45,7 +47,7 @@ def show_found():
   if len( found ) > 0: print "Found:\n - " + "\n - ".join(found)
   else: print "No creds found :(" 
 
-def cancel_handler(signal,frame):
+def cancel_handler(signal=None,frame=None):
   print "Caught ctrl-c, quitting..."
   show_found()
   sys.exit(0)
