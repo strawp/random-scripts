@@ -9,12 +9,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText 
 from email.mime.image import MIMEImage
 
-
 parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
 parser.add_argument("-e", "--emails", help="File containing list of email addresses")
 parser.add_argument("-E", "--email", help="Single email address to send to")
 parser.add_argument("-b", "--body", help="File containing HTML body of email")
 parser.add_argument("-t", "--text", action="store_true", help="Add a plain text part to the email converted from the HTML body (use if the target mail client doesn't display HTML inline, e.g. IBM Notes might not)")
+parser.add_argument("-T", "--textfile", help="Add a plain text part to the email taken from the specified text file") 
 parser.add_argument("-s", "--subject", help="Subject line of email")
 parser.add_argument("-f", "--fromheader", help="From address (address or 'name <address>')")
 parser.add_argument("-r", "--readreceipt", help="Read receipt address (same format as from/to headers")
@@ -26,7 +26,7 @@ parser.add_argument("-d", "--delay", help="Delay between mail sends (seconds)")
 parser.add_argument("-a", "--attachment", help="Filename to add as an attachment")
 args = parser.parse_args()
 
-if not args.body or not args.subject or not args.fromheader:
+if not ( args.body or args.textfile ) or not args.subject or not args.fromheader:
   parser.print_usage()
   sys.exit(2)
 
@@ -53,11 +53,13 @@ if args.emails:
 else:
   print 'Email: ', args.email
 
-bodyfile = args.body
 subject = args.subject
 fromheader = args.fromheader
 
-print 'Body text file: ', bodyfile
+if args.body:
+  print 'Body text file: ', args.body
+if args.textfile:
+  print 'Flat text file: ', args.textfile
 print 'Subject: ', subject
 print 'From: ', fromheader
 
@@ -65,8 +67,18 @@ namematch = re.compile( "\w{2,}\.\w{2,}" )
 attachmentmatch = re.compile( 'src="cid:([^"]+)"' )
 
 # Read in body
-with open (bodyfile,"r") as file:
-  data = file.read().replace('\n','')
+if args.body:
+  with open (args.body,"r") as file:
+    html = file.read().replace('\n','')
+else:
+  html = None
+
+# Read in flat text
+if args.textfile:
+  with open(args.textfile,'r') as f:
+    text = f.read()
+else:
+  text = None
 
 # Read in emails
 if args.emails:
@@ -115,38 +127,50 @@ for email in emails:
     print 'Adding read receipt header: ' + args.readreceipt
     msg["Disposition-Notification-To"] = args.readreceipt
 
-  # Compile body
-  body = data.replace("{name}", name )\
-    .replace("{fname}", fname )\
-    .replace("{lname}", lname )\
-    .replace("{email}", email)\
-    .replace("{username}", user)\
-    .replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
-    .replace("{b64email}",base64.b64encode(email))\
-    .replace("{b64remail}",base64.b64encode(email)[::-1])
+  bodies = {}
 
-  if re.search("{randomint}",body):
-    ri = random.randint(1,9999999)
-    print "Random integer: " + email + " : " + str(ri)
-    body = body.replace("{randomint}",str(ri))
-    randomints = True
-    fp = open(intsfile,"a")
-    fp.write(email + ":" + str(ri)+'\n' )
-    fp.close()
+  if html:
+    bodies['html'] = html
+  if text:
+    bodies['text'] = text
 
-  msg.attach(MIMEText( body, "html" ))
-  if args.text:
-    msg.attach(MIMEText(html2text.html2text(body),'plain'))
+  # Compile bodies
+  for k,v in bodies.iteritems():
+    v = v.replace("{name}", name )\
+      .replace("{fname}", fname )\
+      .replace("{lname}", lname )\
+      .replace("{email}", email)\
+      .replace("{username}", user)\
+      .replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
+      .replace("{b64email}",base64.b64encode(email))\
+      .replace("{b64remail}",base64.b64encode(email)[::-1])
 
-  # Find any embedded images and attach
-  attachments = re.findall('src="cid:([^"]+)"',body)
-  for attachment in attachments:
-    fp = open( attachment, "rb" )
-    img = MIMEImage(fp.read())
-    fp.close()
-    img.add_header('Content-ID', attachment )
-    msg.attach(img)
+    if re.search("{randomint}",v):
+      ri = random.randint(1,9999999)
+      print "Random integer: " + email + " : " + str(ri)
+      v = v.replace("{randomint}",str(ri))
+      randomints = True
+      fp = open(intsfile,"a")
+      fp.write(email + ":" + str(ri)+'\n' )
+      fp.close()
+    bodies[k] = v
 
+  if 'html' in bodies.keys():
+    msg.attach(MIMEText( bodies['html'], "html" ))
+    if args.text:
+      msg.attach(MIMEText(html2text.html2text(bodies['html']),'plain'))
+  
+    # Find any embedded images and attach
+    attachments = re.findall('src="cid:([^"]+)"',bodies['html'])
+    for attachment in attachments:
+      fp = open( attachment, "rb" )
+      img = MIMEImage(fp.read())
+      fp.close()
+      img.add_header('Content-ID', attachment )
+      msg.attach(img)
+
+  if 'text' in bodies.keys():
+    msg.attach(MIMEText(bodies['text'],'plain'))
 
   # Optional attachment
   if args.attachment:
