@@ -1,13 +1,11 @@
 #!/usr/bin/python
-from __future__ import print_function
-import argparse
+import argparse, subprocess
 import sys
 import os.path
 
 # Create a series of grep pipes to cut down a large dictionary of passwords to just ones relevant to a password policy
 
 pipes = []
-
 
 parser = argparse.ArgumentParser(description="Grep out a dictionary file")
 parser.add_argument("-l", "--len", help="Minimum length of passwords")
@@ -34,8 +32,9 @@ if not os.path.isfile( args.dictionary ):
   print( "Not found: " + args.dictionary )
   sys.exit(2)
 
+
 # Work out grep pipes
-pipes.append( 'cat ' + args.dictionary )
+pipes.append( ('cat', args.dictionary) )
 
 if args.windows:
   args.len = 8
@@ -44,46 +43,54 @@ if args.windows:
   args.specnum = True
 
 if args.len:
-  pipes.append( 'grep "^.\{'+str(int(args.len))+',\}$"' )
+  pipes.append( ['grep', r"^.\{{{0},\}}$".format(int(args.len))] )
 
 if args.maxlen:
-  pipes.append( 'grep "^.\{,'+str(int(args.maxlen))+'\}$"' )
+  pipes.append( ['grep', r'^.{,'+str(int(args.maxlen))+'}$' ] )
 
 if args.excludelist:
-  pipes.append( 'grep -x -v -F -f ' + args.excludelist )
+  pipes.append( [ 'grep', '-x', '-v', '-F', '-f', args.excludelist ] )
 
 if args.upper:
-  pipes.append( 'grep "[A-Z]"' )
+  pipes.append( ['grep', '[A-Z]'] )
 
 if args.lower:
-  pipes.append( 'grep "[a-z]"' )
+  pipes.append( ['grep', '[a-z]' ] )
 
 if args.letter:
-  pipes.append( 'grep "[A-Za-z]"' )
+  pipes.append( ['grep', '[A-Za-z]' ] )
 
 if args.numbers:
-  pipes.append( 'grep "[0-9]"' )
+  pipes.append( ['grep', '[0-9]' ] )
 
 if args.special:
-  pipes.append( 'grep "[^a-zA-Z0-9]"' )
+  pipes.append( ['grep', '[^a-zA-Z0-9]' ] )
 
 if args.specnum:
-  pipes.append( 'grep "\([^a-zA-Z0-9]\|[0-9]\)"' )
+  pipes.append( ['grep', r'\([^a-zA-Z0-9]\|[0-9]\)' ])
 
 if args.specupnum:
-  pipes.append( 'grep "\([^a-zA-Z0-9]\|[0-9]\|[A-Z]\)"' )
+  pipes.append( ['grep', r'\([^a-zA-Z0-9]\|[0-9]\|[A-Z]\)' ])
 
 if args.firstupper:
-  pipes.append( 'grep "^[A-Z]"' )
+  pipes.append( ['grep', '^[A-Z]' ])
 
 if args.norepeat:
-  pipes.append( 'grep -v "\(.\)\\1"' )
+  pipes.append( ['grep', '-v', r'\(.\)\1' ])
 
+procs = []
+for p in pipes:
+  
+  # Any stdout available?
+  if len( procs ) > 0:
+    out = procs[-1].stdout
+  else:
+    out = None
 
-# Construct command
-cmd = " | ".join(pipes)
-print("Running: " + cmd, end='\n', file=sys.stderr)
+  procs.append( subprocess.Popen(p, stdout=subprocess.PIPE, stdin=out, universal_newlines=False) )
 
-os.system( cmd )
+out,err = procs[-1].communicate()
+
+print out
 
 
