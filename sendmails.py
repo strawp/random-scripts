@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Send an HTML email to all addresses in a txt file
 
-import argparse, sys, smtplib, datetime, re, os, random, base64, time, html2text
+import argparse, sys, smtplib, datetime, re, os, random, base64, time, subprocess #, html2text
 from email import Encoders
 from email.MIMEBase import MIMEBase
 from email.mime.application import MIMEApplication
@@ -24,7 +24,31 @@ parser.add_argument("-u", "--username", help="SMTP username")
 parser.add_argument("-p", "--password", help="SMTP password")
 parser.add_argument("-d", "--delay", help="Delay between mail sends (seconds)")
 parser.add_argument("-a", "--attachment", help="Filename to add as an attachment")
+parser.add_argument("-x", "--execute", action="append", help="Execute this command before sending each email (stack to create complex commands, e.g. -x 'script.sh' -x 'Email:{email}')")
 args = parser.parse_args()
+
+# Switch out place markers for variables
+def compile_string(txt, name=None, fname=None, lname=None, email=None, user=None, randomint=None ):
+  global intsfile
+  txt = txt.replace("{name}", name )\
+    .replace("{fname}", fname )\
+    .replace("{lname}", lname )\
+    .replace("{email}", email)\
+    .replace("{username}", user)\
+    .replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
+    .replace("{b64email}",base64.b64encode(email))\
+    .replace("{b64remail}",base64.b64encode(email)[::-1])
+
+  if re.search("{randomint}",txt):
+    if not randomint:
+      randomint = random.randint(1,9999999)
+      print "Random integer: " + email + " : " + str(randomint)
+    txt = txt.replace("{randomint}",str(randomint))
+    randomints = True
+    fp = open(intsfile,"a")
+    fp.write(email + ":" + str(randomint)+'\n' )
+    fp.close()
+  return txt, randomint
 
 if not ( args.body or args.textfile ) or not args.subject or not args.fromheader:
   parser.print_usage()
@@ -98,11 +122,13 @@ else:
 
 randomints = False
 intsfile = "randomints.txt"
+count = 0
 
 # Loop over emails
 for email in emails:
   
   msg = MIMEMultipart()
+  randomint = None
 
   email = email.strip()
   user = email.split('@')[0]
@@ -119,10 +145,18 @@ for email in emails:
     fname = ''
     lname = ''
 
+  if args.execute:
+    parts = []
+    for x in args.execute:
+      x,randomint = compile_string(x, name, fname, lname, email, user, randomint )
+      parts.append(x)
+    print 'Running: ' + ' '.join(parts)
+    print subprocess.check_output(parts)
+
   # Compile header
   msg["From"] = fromheader
   msg["To"] = email
-  msg["Subject"] = subject
+  msg["Subject"],randomint = compile_string(subject, name, fname, lname, email, user, randomint )
   if args.readreceipt: 
     print 'Adding read receipt header: ' + args.readreceipt
     msg["Disposition-Notification-To"] = args.readreceipt
@@ -136,23 +170,7 @@ for email in emails:
 
   # Compile bodies
   for k,v in bodies.iteritems():
-    v = v.replace("{name}", name )\
-      .replace("{fname}", fname )\
-      .replace("{lname}", lname )\
-      .replace("{email}", email)\
-      .replace("{username}", user)\
-      .replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
-      .replace("{b64email}",base64.b64encode(email))\
-      .replace("{b64remail}",base64.b64encode(email)[::-1])
-
-    if re.search("{randomint}",v):
-      ri = random.randint(1,9999999)
-      print "Random integer: " + email + " : " + str(ri)
-      v = v.replace("{randomint}",str(ri))
-      randomints = True
-      fp = open(intsfile,"a")
-      fp.write(email + ":" + str(ri)+'\n' )
-      fp.close()
+    v,randomint = compile_string(v, name, fname, lname, email, user, randomint )
     bodies[k] = v
 
   if 'html' in bodies.keys():
@@ -192,6 +210,12 @@ for email in emails:
 
   if args.delay:
     time.sleep(args.delay)
+  count += 1 
+  if count % 10 == 0:
+    print 'Getting new connection...'
+    server = smtplib.SMTP(args.host, args.port)
+    if args.username and args.password: 
+      server.login(args.username, args.password)
 	
 server.quit()
 
