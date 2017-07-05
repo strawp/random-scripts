@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description="Test if an SMTP service supports o
 parser.add_argument("-t", "--toheader", help="To address")
 parser.add_argument("-f", "--fromheader", help="From address")
 parser.add_argument("-g", "--host", help="SMTP host")
+parser.add_argument("-m", "--message", help="An optional message to append to the generated email")
 args = parser.parse_args()
 
 if not args.toheader or not args.fromheader or not args.host:
@@ -20,6 +21,8 @@ if not args.toheader or not args.fromheader or not args.host:
 print 'From: ', args.fromheader
 print 'To: ', args.toheader
 print 'Host: ', args.host
+if args.message:
+  print 'Message: ', args.message
 
 msg = MIMEMultipart()
 
@@ -29,7 +32,10 @@ msg["To"] = args.toheader
 msg["Subject"] = "Relayed mail from " + args.host
 
 # Compile body
-msgText = MIMEText( "<p>This email has been sent via an open relay at <strong>"+args.host+"</strong></p>", "html" )
+html = "<p>This email has been sent via an open relay at <strong>"+args.host+"</strong></p>"
+if args.message:
+  html += "<p>" + args.message + "</p>"
+msgText = MIMEText( html, "html" )
 msg.attach(msgText)
 
 # Send email
