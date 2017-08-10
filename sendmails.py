@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Send an HTML email to all addresses in a txt file
 
-import argparse, sys, smtplib, datetime, re, os, random, base64, time, subprocess #, html2text
+import argparse, sys, smtplib, datetime, re, os, random, base64, time, subprocess, csv #, html2text
 from email import Encoders
 from email.MIMEBase import MIMEBase
 from email.mime.application import MIMEApplication
@@ -9,10 +9,16 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText 
 from email.mime.image import MIMEImage
 
+varnames = ['email','name','fname','lname','username']
+markers = []
+markers.extend(varnames)
+markers.extend(['date','b64email','b64remail','randomint'])
+
 parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
 parser.add_argument("-e", "--emails", help="File containing list of email addresses")
 parser.add_argument("-E", "--email", help="Single email address to send to")
-parser.add_argument("-b", "--body", help="File containing HTML body of email")
+parser.add_argument("--csv", help="CSV file of email addresses with headers containing at least 'email' and optionally also: '"+"', '".join(varnames)+"'")
+parser.add_argument("-b", "--body", help="File containing HTML body of email, can contain template markers to be replaced with each email sent: {"+"}, {".join(markers)+"}")
 parser.add_argument("-t", "--text", action="store_true", help="Add a plain text part to the email converted from the HTML body (use if the target mail client doesn't display HTML inline, e.g. IBM Notes might not)")
 parser.add_argument("-T", "--textfile", help="Add a plain text part to the email taken from the specified text file") 
 parser.add_argument("-s", "--subject", help="Subject line of email")
@@ -23,24 +29,25 @@ parser.add_argument("-P", "--port", help="SMTP port")
 parser.add_argument("-u", "--username", help="SMTP username")
 parser.add_argument("-p", "--password", help="SMTP password")
 parser.add_argument("-d", "--delay", help="Delay between mail sends (seconds)")
+parser.add_argument("--reconnect", default=5, type=int, help="Reconnect to SMTP host after this many email sends")
 parser.add_argument("-a", "--attachment", help="Filename to add as an attachment")
 parser.add_argument("-x", "--execute", action="append", help="Execute this command before sending each email (stack to create complex commands, e.g. -x 'script.sh' -x 'Email:{email}')")
 args = parser.parse_args()
 
 # Switch out place markers for variables
-def compile_string(txt, name=None, fname=None, lname=None, email=None, user=None, randomint=None ):
+def compile_string(txt, variables ):
   global intsfile
-  txt = txt.replace("{name}", name )\
-    .replace("{fname}", fname )\
-    .replace("{lname}", lname )\
-    .replace("{email}", email)\
-    .replace("{username}", user)\
-    .replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
-    .replace("{b64email}",base64.b64encode(email))\
-    .replace("{b64remail}",base64.b64encode(email)[::-1])
+  for name,val in variables.iteritems():
+    if not val: continue
+    txt = txt.replace('{'+name+'}', str(val) )
 
+  txt = txt.replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
+    .replace("{b64email}",base64.b64encode(variables['email']))\
+    .replace("{b64remail}",base64.b64encode(variables['email'])[::-1])
+  
+  randomint = None
   if re.search("{randomint}",txt):
-    if not randomint:
+    if not 'randomint' in variables.keys() or not variables['randomint']:
       randomint = random.randint(1,9999999)
       print "Random integer: " + email + " : " + str(randomint)
     txt = txt.replace("{randomint}",str(randomint))
@@ -50,19 +57,31 @@ def compile_string(txt, name=None, fname=None, lname=None, email=None, user=None
     fp.close()
   return txt, randomint
 
+# Connect to SMTP server
+def connect( args ):
+  if not args.host:
+    server = smtplib.SMTP('localhost')
+  else:
+    server = smtplib.SMTP(args.host, args.port)
+    try:
+      server.starttls()
+    except SMTPException:
+      print 'Server doesn\'t support STARTTLS'
+    server.ehlo()
+    if args.username and args.password: 
+      server.login(args.username, args.password)
+  return server
+
 if not ( args.body or args.textfile ) or not args.subject or not args.fromheader:
   parser.print_usage()
   sys.exit(2)
 
-if not args.emails and not args.email:
+if not args.emails and not args.email and not args.csv:
   parser.print_usage()
   sys.exit(2)
 
-# if args.host and ( not args.username and not args.password ):
-#   print 'Username and password required when specifying host'
-#   sys.exit(2)
-#   if not args.port:
-#     args.port = 587
+if args.host and not args.port:
+  args.port = 587
 
 if args.delay:
   args.delay = int( args.delay )
@@ -76,6 +95,9 @@ if args.emails:
   print 'Emails file: ', emailsfile
 else:
   print 'Email: ', args.email
+
+# Dictionary specific to an email
+variables = {}
 
 subject = args.subject
 fromheader = args.fromheader
@@ -105,58 +127,63 @@ else:
   text = None
 
 # Read in emails
-if args.emails:
+recipients = []
+if args.csv:
+  with open(args.csv, 'rb') as csvfile:
+    csvreader = csv.DictReader(csvfile)
+    for row in csvreader:
+      if 'email' not in row.keys(): continue
+      recipients.append( row )
+  
+elif args.emails:
   with open(emailsfile) as f:
     emails = f.readlines()
+  for email in emails:
+    recipients.append({'email':email})
 else:
-  emails = []
-  emails.append(args.email)
+  recipients.append({'email':args.email})
 
 # Connect
-if not args.host:
-  server = smtplib.SMTP('localhost')
-else:
-  server = smtplib.SMTP(args.host, args.port)
-  if args.username and args.password: 
-    server.login(args.username, args.password)
+server = connect( args )
 
 randomints = False
 intsfile = "randomints.txt"
 count = 0
 
 # Loop over emails
-for email in emails:
+for variables in recipients:
   
+  email = variables['email']
   msg = MIMEMultipart()
   randomint = None
 
-  email = email.strip()
-  user = email.split('@')[0]
-  name = user
-  if namematch.match( name ):
-    name = name.replace("."," ").title()
-  else:
-    name = ''
+  variables['email'] = email.strip()
+  variables['user'] = variables['email'].split('@')[0]
+  if 'name' not in variables.keys():
+    if namematch.match( variables['user'] ):
+      variables['name'] = variables['name'].replace("."," ").title()
+    else:
+      variables['name'] = ''
 
-  if len(name.split(' ')) >= 2:
-    fname = name.split(' ')[0]
-    lname = name.split(' ')[1]
+  if len(variables['name'].split(' ')) >= 2:
+    if 'fname' not in variables.keys(): variables['fname'] = variables['name'].split(' ')[0]
+    if 'lname' not in variables.keys(): variables['lname'] = variables['name'].split(' ')[1]
   else:
-    fname = ''
-    lname = ''
+    if 'fname' not in variables.keys(): variables['fname'] = ''
+    if 'lname' not in variables.keys(): variables['lname'] = ''
 
   if args.execute:
     parts = []
     for x in args.execute:
-      x,randomint = compile_string(x, name, fname, lname, email, user, randomint )
+      x,variables['randomint'] = compile_string(x, variables )
       parts.append(x)
     print 'Running: ' + ' '.join(parts)
     print subprocess.check_output(parts)
 
   # Compile header
   msg["From"] = fromheader
-  msg["To"] = email
-  msg["Subject"],randomint = compile_string(subject, name, fname, lname, email, user, randomint )
+  msg["To"] = variables['email']
+  msg["Subject"],variables['randomint'] = compile_string(subject, variables )
   if args.readreceipt: 
     print 'Adding read receipt header: ' + args.readreceipt
     msg["Disposition-Notification-To"] = args.readreceipt
@@ -170,7 +197,7 @@ for email in emails:
 
   # Compile bodies
   for k,v in bodies.iteritems():
-    v,randomint = compile_string(v, name, fname, lname, email, user, randomint )
+    v,variables['randomint'] = compile_string(v, variables )
     bodies[k] = v
 
   if 'html' in bodies.keys():
@@ -202,20 +229,18 @@ for email in emails:
   # print msg.as_string()
 
   # Send email
-  sys.stdout.write( "Sending to " + email + "... " )
+  sys.stdout.write( "Sending to " + variables['email'] + "... " )
   sys.stdout.flush()
-  server.sendmail( fromheader, email, msg.as_string() )
+  server.sendmail( fromheader, variables['email'], msg.as_string() )
   sys.stdout.write( "sent\n" )
   sys.stdout.flush()
 
   if args.delay:
     time.sleep(args.delay)
   count += 1 
-  if count % 10 == 0:
+  if count % int(args.reconnect) == 0:
     print 'Getting new connection...'
-    server = smtplib.SMTP(args.host, args.port)
-    if args.username and args.password: 
-      server.login(args.username, args.password)
+    server = connect( args )
 	
 server.quit()
 
