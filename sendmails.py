@@ -19,6 +19,7 @@ parser.add_argument("-e", "--emails", help="File containing list of email addres
 parser.add_argument("-E", "--email", help="Single email address to send to")
 parser.add_argument("--csv", help="CSV file of email addresses with headers containing at least 'email' and optionally also: '"+"', '".join(varnames)+"'")
 parser.add_argument("-b", "--body", help="File containing HTML body of email, can contain template markers to be replaced with each email sent: {"+"}, {".join(markers)+"}")
+parser.add_argument("-B", "--bodydir", help="Directory containing any number of .html files which will be cycled through to act as the body template")
 parser.add_argument("-t", "--text", action="store_true", help="Add a plain text part to the email converted from the HTML body (use if the target mail client doesn't display HTML inline, e.g. IBM Notes might not)")
 parser.add_argument("-T", "--textfile", help="Add a plain text part to the email taken from the specified text file") 
 parser.add_argument("-s", "--subject", help="Subject line of email")
@@ -72,7 +73,7 @@ def connect( args ):
       server.login(args.username, args.password)
   return server
 
-if not ( args.body or args.textfile ) or not args.subject or not args.fromheader:
+if not ( args.body or args.bodydir or args.textfile ) or not args.subject or not args.fromheader:
   parser.print_usage()
   sys.exit(2)
 
@@ -119,6 +120,24 @@ if args.body:
 else:
   html = None
 
+# Read in array of bodies
+templates = None
+if args.bodydir:
+  bd = os.path.expanduser(args.bodydir)
+  if not os.path.isdir( bd ):
+    print "FAIL: " + bd + " doesn't exist"
+  files = [f for f in os.listdir(bd) if os.path.isfile(os.path.join(bd,f))]  # and (re.match('.+\.html$',f) != None ))]
+  files = [f for f in files if re.match('.+\.html$',f) != None]
+  files.sort()
+  templates = []
+  for fn in files:
+    fn = os.path.join(bd,fn)
+    with open(fn,'r') as f:
+      templates.append({'name':fn,'content':f.read()})
+
+  if len( templates ) == 0:
+    print 'FAIL: No html files found in ' + bd
+
 # Read in flat text
 if args.textfile:
   with open(args.textfile,'r') as f:
@@ -139,7 +158,7 @@ elif args.emails:
   with open(emailsfile) as f:
     emails = f.readlines()
   for email in emails:
-    email = email.trim()
+    email = email.strip()
     recipients.append({'email':email})
 else:
   recipients.append({'email':args.email})
@@ -195,6 +214,10 @@ for variables in recipients:
     bodies['html'] = html
   if text:
     bodies['text'] = text
+  if templates:
+    tmpl = templates[count%len(templates)]
+    bodies['html'] = tmpl['content']
+    print 'Using template: ' + tmpl['name']
 
   # Compile bodies
   for k,v in bodies.iteritems():
