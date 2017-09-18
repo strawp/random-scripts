@@ -49,11 +49,11 @@ def compile_string(txt, variables ):
   if re.search("{randomint}",txt):
     if not 'randomint' in variables.keys() or not variables['randomint']:
       randomint = random.randint(1,9999999)
-      print "Random integer: " + email + " : " + str(randomint)
+      print "Random integer: " + variables['email'] + " : " + str(randomint)
     txt = txt.replace("{randomint}",str(randomint))
     randomints = True
     fp = open(intsfile,"a")
-    fp.write(email + ":" + str(randomint)+'\n' )
+    fp.write(variables['email'] + ":" + str(randomint)+'\n' )
     fp.close()
   return txt, randomint
 
@@ -139,6 +139,7 @@ elif args.emails:
   with open(emailsfile) as f:
     emails = f.readlines()
   for email in emails:
+    email = email.trim()
     recipients.append({'email':email})
 else:
   recipients.append({'email':args.email})
@@ -161,7 +162,7 @@ for variables in recipients:
   variables['user'] = variables['email'].split('@')[0]
   if 'name' not in variables.keys():
     if namematch.match( variables['user'] ):
-      variables['name'] = variables['name'].replace("."," ").title()
+      variables['name'] = variables['user'].replace("."," ").title()
     else:
       variables['name'] = ''
 
