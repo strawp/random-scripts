@@ -9,7 +9,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText 
 from email.mime.image import MIMEImage
 
-varnames = ['email','name','fname','lname','username']
+varnames = ['email','name','fname','lname','user']
 markers = []
 markers.extend(varnames)
 markers.extend(['date','b64email','b64remail','randomint'])
@@ -19,7 +19,7 @@ parser.add_argument("-e", "--emails", help="File containing list of email addres
 parser.add_argument("-E", "--email", help="Single email address to send to")
 parser.add_argument("--csv", help="CSV file of email addresses with headers containing at least 'email' and optionally also: '"+"', '".join(varnames)+"'")
 parser.add_argument("-b", "--body", help="File containing HTML body of email, can contain template markers to be replaced with each email sent: {"+"}, {".join(markers)+"}")
-parser.add_argument("-B", "--bodydir", help="Directory containing any number of .html files which will be cycled through to act as the body template")
+parser.add_argument("-B", "--bodydir", help="Directory containing any number of .html files which will be cycled through (different template for each email) to act as the body template")
 parser.add_argument("-t", "--text", action="store_true", help="Add a plain text part to the email converted from the HTML body (use if the target mail client doesn't display HTML inline, e.g. IBM Notes might not)")
 parser.add_argument("-T", "--textfile", help="Add a plain text part to the email taken from the specified text file") 
 parser.add_argument("-s", "--subject", help="Subject line of email")
@@ -94,8 +94,11 @@ if args.attachment:
 if args.emails:
   emailsfile = args.emails
   print 'Emails file: ', emailsfile
-else:
+elif args.email:
   print 'Email: ', args.email
+elif args.csv:
+  print 'CSV: ', args.csv
+
 
 # Dictionary specific to an email
 variables = {}
@@ -169,6 +172,7 @@ server = connect( args )
 randomints = False
 intsfile = "randomints.txt"
 count = 0
+
 
 # Loop over emails
 for variables in recipients:
