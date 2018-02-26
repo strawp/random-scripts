@@ -25,6 +25,7 @@ parser.add_argument("-T", "--textfile", help="Add a plain text part to the email
 parser.add_argument("-s", "--subject", help="Subject line of email")
 parser.add_argument("-f", "--fromheader", help="From address (address or 'name <address>')")
 parser.add_argument("-r", "--readreceipt", help="Read receipt address (same format as from/to headers")
+parser.add_argument("-H", "--header", action="append", help="Add any number of custom headers")
 parser.add_argument("-g", "--host", help="SMTP host")
 parser.add_argument("-P", "--port", help="SMTP port")
 parser.add_argument("-u", "--username", help="SMTP username")
@@ -208,9 +209,17 @@ for variables in recipients:
   msg["From"] = fromheader
   msg["To"] = variables['email']
   msg["Subject"],variables['randomint'] = compile_string(subject, variables )
+  
+  # Read receipt
   if args.readreceipt: 
     print 'Adding read receipt header: ' + args.readreceipt
     msg["Disposition-Notification-To"] = args.readreceipt
+  
+  # Other custom headers
+  if args.header:
+    for h in args.header:
+      k,v = h.split(':')
+      msg[k.strip()] = v.strip()
 
   bodies = {}
 
