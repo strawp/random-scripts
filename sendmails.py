@@ -120,7 +120,7 @@ attachmentmatch = re.compile( 'src="cid:([^"]+)"' )
 # Read in body
 if args.body:
   with open (args.body,"r") as file:
-    html = file.read().replace('\n','')
+    html = file.read() # .replace('\n','')
 else:
   html = None
 
