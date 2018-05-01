@@ -67,7 +67,7 @@ def connect( args ):
     server = smtplib.SMTP(args.host, args.port)
     try:
       server.starttls()
-    except SMTPException:
+    except:
       print 'Server doesn\'t support STARTTLS'
     server.ehlo()
     if args.username and args.password: 
