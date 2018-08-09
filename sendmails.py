@@ -14,12 +14,13 @@ markers = []
 markers.extend(varnames)
 markers.extend(['date','b64email','b64remail','randomint'])
 
-parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
+parser = argparse.ArgumentParser(description="Send emails with various helpful options")
 parser.add_argument("-e", "--emails", help="File containing list of email addresses")
 parser.add_argument("-E", "--email", help="Single email address to send to")
 parser.add_argument("--csv", help="CSV file of email addresses with headers containing at least 'email' and optionally also: '"+"', '".join(varnames)+"'")
 parser.add_argument("-b", "--body", help="File containing HTML body of email, can contain template markers to be replaced with each email sent: {"+"}, {".join(markers)+"}")
 parser.add_argument("-B", "--bodydir", help="Directory containing any number of .html files which will be cycled through (different template for each email) to act as the body template")
+parser.add_argument("--dtformat", default="%d/%m/%Y", help="Format string for using when substituting {date} in templates")
 parser.add_argument("-t", "--text", action="store_true", help="Add a plain text part to the email converted from the HTML body (use if the target mail client doesn't display HTML inline, e.g. IBM Notes might not)")
 parser.add_argument("-T", "--textfile", help="Add a plain text part to the email taken from the specified text file") 
 parser.add_argument("-s", "--subject", help="Subject line of email")
@@ -43,7 +44,8 @@ def compile_string(txt, variables ):
     if not val: continue
     txt = txt.replace('{'+name+'}', str(val) )
 
-  txt = txt.replace("{date}",datetime.datetime.today().strftime("%d/%m/%Y"))\
+  txt = txt\
+    .replace("{date}",datetime.datetime.today().strftime(variables['dtformat']))\
     .replace("{b64email}",base64.b64encode(variables['email']))\
     .replace("{b64remail}",base64.b64encode(variables['email'])[::-1])
   
@@ -197,6 +199,8 @@ for variables in recipients:
     if 'fname' not in variables.keys(): variables['fname'] = ''
     if 'lname' not in variables.keys(): variables['lname'] = ''
 
+  variables['dtformat'] = args.dtformat
+
   if args.execute:
     parts = []
     for x in args.execute:
@@ -269,7 +273,7 @@ for variables in recipients:
   sys.stdout.write( "Sending to " + variables['email'] + "... " )
   sys.stdout.flush()
   server.sendmail( fromheader, variables['email'], msg.as_string() )
-  sys.stdout.write( "sent\n" )
+  sys.stdout.write( "sent ["+datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')+"]\n" )
   sys.stdout.flush()
 
   if args.delay:
