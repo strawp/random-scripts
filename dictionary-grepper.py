@@ -37,7 +37,8 @@ if not os.path.isfile( args.dictionary ):
 pipes.append( ('cat', args.dictionary) )
 
 if args.windows:
-  args.len = 8
+  if not args.len:
+    args.len = 8
   args.upper = True
   args.lower = True
   args.specnum = True
