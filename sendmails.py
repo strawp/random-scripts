@@ -41,7 +41,7 @@ args = parser.parse_args()
 def compile_string(txt, variables ):
   global intsfile
   for name,val in variables.iteritems():
-    if not val: continue
+    if type(val) == None: continue
     txt = txt.replace('{'+name+'}', str(val) )
 
   txt = txt\
