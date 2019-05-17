@@ -50,7 +50,7 @@ def compile_string(txt, variables ):
     .replace("{b64remail}",base64.b64encode(variables['email'])[::-1])
   
   randomint = None
-  if re.search("{randomint}",txt):
+  if re.search('{randomint}', txt ):
     if not 'randomint' in variables.keys() or not variables['randomint']:
       randomint = random.randint(1,9999999)
       print "Random integer: " + variables['email'] + " : " + str(randomint)
@@ -204,7 +204,9 @@ for variables in recipients:
   if args.execute:
     parts = []
     for x in args.execute:
-      x,variables['randomint'] = compile_string(x, variables )
+      x,randomint = compile_string(x, variables )
+      if randomint:
+        variables['randomint'] = randomint
       parts.append(x)
     print 'Running: ' + ' '.join(parts)
     print subprocess.check_output(parts)
@@ -212,7 +214,9 @@ for variables in recipients:
   # Compile header
   msg["From"] = fromheader
   msg["To"] = variables['email']
-  msg["Subject"],variables['randomint'] = compile_string(subject, variables )
+  msg["Subject"],randomint = compile_string(subject, variables )
+  if randomint:
+    variables['randomint'] = randomint
   
   # Read receipt
   if args.readreceipt: 
@@ -238,7 +242,9 @@ for variables in recipients:
 
   # Compile bodies
   for k,v in bodies.iteritems():
-    v,variables['randomint'] = compile_string(v, variables )
+    v,randomint = compile_string(v, variables )
+    if randomint:
+      variables['randomint'] = randomint
     bodies[k] = v
 
   if 'html' in bodies.keys():
