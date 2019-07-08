@@ -67,10 +67,10 @@ subprocess.call("adb shell su root 'mount | grep system'", shell=True )
 
 # Mv cert to the /system/etc/security/cacerts
 # 
-# mv /sdcard/Downloads/<hash>.0 /system/etc/security/cacerts
+# mv /sdcard/Download/<hash>.0 /system/etc/security/cacerts
 print ''
 print 'Moving cert into system cacerts dir'
-subprocess.call("adb shell su root 'mv /sdcard/Downloads/"+certhash+" /system/etc/security/cacerts'", shell=True )
+subprocess.call("adb shell su root 'mv /sdcard/Download/"+certhash+" /system/etc/security/cacerts'", shell=True )
 
 # chmod 644 /system/etc/security/cacerts/<hash>.0
 print ''
