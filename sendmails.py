@@ -36,15 +36,13 @@ class Sendmails:
   execute = []
   templates = []
   server = None
-
-  def __init__( self ):
-    return True
-
+  session = None
 
   # Connect to SMTP server
   def connect( self ):
     if self.ews:
       return True
+    print 'Getting new connection...'
     if not self.host:
       self.server = smtplib.SMTP('localhost')
     else:
@@ -75,6 +73,7 @@ class Sendmails:
     # Loop over emails
     for variables in self.recipients:
       e = Email( variables )
+      e.subject = self.subject
       e.fromheader = self.fromheader  
       e.variables['dtformat'] = self.dtformat
       e.readreceipt = self.readreceipt
@@ -110,7 +109,6 @@ class Sendmails:
         time.sleep(self.delay)
       count += 1 
       if count % int(self.reconnect) == 0:
-        print 'Getting new connection...'
         self.connect() 
     
     self.disconnect()
@@ -131,7 +129,7 @@ class Sendmails:
       print subprocess.check_output(parts)
 
     # Compile header
-    email.subject = email.compile_string(subject)
+    email.subject = email.compile_string(email.subject)
     
     # Compile bodies
     if email.html:
@@ -140,9 +138,10 @@ class Sendmails:
       email.text = email.compile_string( email.text )
     else:
       email.text = html2text.html2text( email.html )
+    return email
 
   def send( self, email ):
-    sys.stdout.write( "Sending to " + variables['email'] + "... " )
+    sys.stdout.write( "Sending to " + email.variables['email'] + "... " )
     sys.stdout.flush()
     if self.ews:
       self.send_ews( email )
@@ -159,6 +158,21 @@ class Sendmails:
     return True
 
   def send_ews( self, email ):
+    from exchangelib import Account, Message, Mailbox, FileAttachment, HTMLBody, Credentials, Configuration, NTLM, DELEGATE
+    creds = Credentials(self.username,self.password)
+    config = Configuration(
+      service_endpoint=self.ews, 
+      credentials=creds, 
+      auth_type=NTLM
+    )
+    account = Account(
+        primary_smtp_address=self.username,
+        config=config, 
+        autodiscover=False,
+        access_type=DELEGATE,
+    )
+    m = email.get_ewsmessage( account )
+    m.send()
     return False
 
 class Email:
@@ -180,6 +194,7 @@ class Email:
     msg = MIMEMultipart()
     self.randomint = random.randint(1,9999999)
 
+    namematch = re.compile( "\w{2,}\.\w{2,}" )
     self.variables['email'] = self.toheader.strip()
     self.variables['user'] = self.variables['email'].split('@')[0]
     if 'name' not in self.variables.keys():
@@ -243,8 +258,44 @@ class Email:
       Encoders.encode_base64(part)
       part.add_header('Content-Disposition', 'attachment; filename="'+filename+'"')
       msg.attach(part)
-
+    
     return msg
+
+  def get_ewsmessage( self, account ):
+    from exchangelib import Account, Message, Mailbox, FileAttachment, HTMLBody, Credentials, Configuration, NTLM, DELEGATE
+    m = Message(
+      account=account,
+      subject=self.subject,
+      body=self.html,
+      to_recipients=[self.toheader]
+    )
+    if self.readreceipt:
+      m.is_read_receipt_requested = True
+  
+    if len( self.headers ) > 0:
+      print 'Custom mail headers not currently supported in EWS mode'
+    # for k,v in self.headers:
+    # This is fiddly, not enabled yet
+
+    # Find any embedded images and attach
+    attachments = re.findall( 'src="cid:([^"]+)"', self.html )
+    for attachment in attachments:
+      a = FileAttachment(
+        name=attachment,
+        content=open(attachment, "rb").read(),
+        is_inline=True,
+        content_id=attachment
+      )
+      m.attach(a)
+
+    # Optional attachment
+    for attachment in self.attachments:
+      a = FileAttachment(
+        name=attachment,
+        content=open(attachment, "rb").read()
+      )
+      m.attach(a)
+    return m
 
 def main():
   parser = argparse.ArgumentParser(description="Send emails with various helpful options")
@@ -285,6 +336,12 @@ def main():
     args.port = 587
   sender.port = args.port
   sender.host = args.host
+  if args.ews: sender.ews = args.ews
+  if args.dtformat: sender.dtformat = args.dtformat
+  sender.reconnect = args.reconnect
+
+  sender.username = args.username
+  sender.password = args.password
 
   if args.delay:
     args.delay = int( args.delay )
@@ -315,10 +372,9 @@ def main():
     print 'Body text file: ', args.body
   if args.textfile:
     print 'Flat text file: ', args.textfile
-  print 'Subject: ', subject
-  print 'From: ', fromheader
+  print 'Subject: ', args.subject
+  print 'From: ', args.fromheader
 
-  namematch = re.compile( "\w{2,}\.\w{2,}" )
   attachmentmatch = re.compile( 'src="cid:([^"]+)"' )
 
   # Read in body
