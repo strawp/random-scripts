@@ -78,7 +78,8 @@ class Sendmails:
       e.variables['dtformat'] = self.dtformat
       e.readreceipt = self.readreceipt
       e.addtext = self.addtext
-      
+      e.attachments = self.attachments
+
       # Other custom headers
       for h in self.headers:
         k,v = h.split(':')
@@ -313,8 +314,8 @@ def main():
   parser.add_argument("-H", "--header", action="append", help="Add any number of custom headers")
   parser.add_argument("-g", "--host", help="SMTP host")
   parser.add_argument("-P", "--port", help="SMTP port")
-  parser.add_argument("-u", "--username", help="SMTP username")
-  parser.add_argument("-p", "--password", help="SMTP password")
+  parser.add_argument("-u", "--username", help="SMTP / EWS username")
+  parser.add_argument("-p", "--password", help="SMTP / EWS password")
   parser.add_argument("--ews", help="URL to EWS endpoint (e.g. https://owa.example.com/EWS/Exchange.asmx)")
   parser.add_argument("-d", "--delay", help="Delay between mail sends (seconds)")
   parser.add_argument("--reconnect", default=5, type=int, help="Reconnect to SMTP host after this many email sends")
