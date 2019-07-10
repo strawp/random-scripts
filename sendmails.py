@@ -123,8 +123,6 @@ class Sendmails:
       parts = []
       for x in self.execute:
         x = email.compile_string(x)
-        if randomint:
-          variables['randomint'] = randomint
         parts.append(x)
       print 'Running: ' + ' '.join(parts)
       print subprocess.check_output(parts)
@@ -267,7 +265,7 @@ class Email:
     m = Message(
       account=account,
       subject=self.subject,
-      body=self.html,
+      body=HTMLBody(self.html),
       to_recipients=[self.toheader]
     )
     if self.readreceipt:
@@ -323,7 +321,7 @@ def main():
   parser.add_argument("-x", "--execute", action="append", help="Execute this command before sending each email (stack to create complex commands, e.g. -x 'script.sh' -x 'Email:{email}')")
   args = parser.parse_args()
   
-  if not ( args.body or args.bodydir or args.textfile ) or not args.subject or not args.fromheader:
+  if not ( args.body or args.bodydir or args.textfile ) or not args.subject or ( not args.ews and not args.fromheader):
     parser.print_usage()
     sys.exit(2)
 
@@ -337,7 +335,14 @@ def main():
     args.port = 587
   sender.port = args.port
   sender.host = args.host
-  if args.ews: sender.ews = args.ews
+  if args.ews: 
+    sender.ews = args.ews
+    if args.fromheader:
+      print 'NOTE: The "From:" header can\'t be spoofed over EWS'
+    
+    if args.text or args.textfile:
+      print 'NOTE: EWS methods are currently HTML only'
+
   if args.dtformat: sender.dtformat = args.dtformat
   sender.reconnect = args.reconnect
 
@@ -353,6 +358,8 @@ def main():
       print 'Path to attachment ' + args.attachment + ' not found'
     else:
       sender.attachments.append( args.attachment )
+
+  sender.execute = args.execute
 
   if args.emails:
     emailsfile = args.emails
