@@ -193,6 +193,9 @@ class Email:
     msg = MIMEMultipart()
     self.randomint = random.randint(1,9999999)
 
+    for k,v in variables.iteritems():
+      self.variables[k] = v
+
     namematch = re.compile( "\w{2,}\.\w{2,}" )
     self.variables['email'] = self.toheader.strip()
     self.variables['user'] = self.variables['email'].split('@')[0]
@@ -428,6 +431,8 @@ def main():
     with open(args.csv, 'rb') as csvfile:
       csvreader = csv.DictReader(csvfile)
       for row in csvreader:
+        for k in row.keys():
+          if k not in markers: markers.append(k)
         if 'email' not in row.keys(): continue
         recipients.append( row )
     
