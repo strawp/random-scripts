@@ -1,0 +1,59 @@
+#!/bin/bash
+# Screenshot OCR tool
+# requires: imagemagick, tesseract-ocr
+# recommended to be installed with incron
+# e.g. /home/iain/working/screenshots IN_CLOSE_WRITE /home/iain/bin/scrocr ocr $@/$#
+
+op=$1
+defaultfolder="${HOME}/working/screenshots"
+convertpattern='s/\/\./\//g; s/\.txt\(:\|$\)/\1/'
+
+case $op in
+ocr)
+  # OCR an image
+  # text saved in hidden file next to image
+
+  fn=$2
+
+  if [[ $fn =~ ".txt" ]] || [[ $fn =~ ".lg.png" ]]; then
+    echo "Not a screenshot"
+    exit 1
+  fi
+  
+  # Increase size to improve OCR accuracy
+  convert -limit memory 8000MB -modulate 100,0 -resize 400% $fn $fn.lg.png
+
+  # OCR to text file
+  txt=$(dirname $fn)/.$(basename $fn)
+  tesseract $fn.lg.png $txt
+
+  # Delete large version
+  rm $fn.lg.png
+  ;;
+
+search|s)
+  # Find txt in a screenshot dir
+  search=$2
+  if [ -n "$3" ]; then
+    folder=$3
+  else
+    folder=$defaultfolder
+  fi
+  grep -d skip -i "$search" $folder/.* | sed "$convertpattern" 2>/dev/null
+  ;;
+
+open|o)
+  # Open each matching image
+  $0 search $2 | cut -d: -f 1 | sort -u | while read f; do gnome-open $f; done
+  ;;
+
+cat|c)
+  # Dump out all text for matching images
+  if [ -n "$3" ]; then
+    folder=$3
+  else
+    folder=$defaultfolder
+  fi
+  grep -l -d skip -i "$2" $folder/.* | sort -u | while read f; do echo $f | sed "$convertpattern"; cat $f; done 2>/dev/null
+
+esac
