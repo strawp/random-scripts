@@ -12,7 +12,7 @@ case $op in
 ocr)
   # OCR an image
   # text saved in hidden file next to image
-
+  
   fn=$2
   txt=$(dirname $fn)/.$(basename $fn)
 
@@ -21,10 +21,11 @@ ocr)
     exit 1
   fi
 
-  if [[ $fn =~ ".txt" ]] || [[ $fn =~ ".lg.png" ]]; then
+  if [[ ! $fn =~ \.png$ ]] || [[ $fn =~ \.lg\.png$ ]]; then
     echo "Not a screenshot"
     exit 1
   fi
+  
   
   # Increase size to improve OCR accuracy
   convert -limit memory 8000MB -modulate 100,0 -resize 400% $fn $fn.lg.png
@@ -34,6 +35,7 @@ ocr)
 
   # Write text to file metadata
   exiftool -overwrite_original -comment="$(cat $txt.txt)" $fn
+  exiftool -overwrite_original -Caption-Abstract="$(cat $txt.txt)" $fn
 
   # Delete large version
   rm $fn.lg.png
@@ -52,7 +54,7 @@ search|s)
 
 open|o)
   # Open each matching image
-  $0 search "$2" | cut -d: -f 1 | sort -u | while read f; do gnome-open "$f"; done
+  $0 search "$2" | cut -d: -f 1 | sort -u | while read f; do xdg-open "$f"; done
   ;;
 
 cat|c)
@@ -63,5 +65,19 @@ cat|c)
     folder=$defaultfolder
   fi
   grep -l -d skip -i "$2" $folder/.* | sort -u | while read f; do echo $f | sed "$convertpattern"; cat $f; done 2>/dev/null
+  ;;
 
+figure|fig|f)
+  # Output base64 encoded HTML figures of each image matching
+  if [ -n "$3" ]; then
+    folder=$3
+  else
+    folder=$defaultfolder
+  fi
+  $0 search "$2" | cut -d: -f 1 | sort -u | while read f; 
+  do 
+    mimetype=$(file -bN --mime-type "$f")
+    content=$(base64 -w0 < "$f")
+    echo "\n<figure><img src=\"data:$mimetype;base64,$content\" width=\"100%\" alt=\"\" />\n<figcaption>: </figcaption>\n</figure>\n"
+  done
 esac
