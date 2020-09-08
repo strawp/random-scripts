@@ -2,8 +2,8 @@
 # Send an HTML email to all addresses in a txt file
 
 import argparse, sys, smtplib, datetime, re, os, random, base64, time, subprocess, csv, html2text
-from email import Encoders
-from email.MIMEBase import MIMEBase
+from email import encoders
+from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText 
@@ -42,7 +42,7 @@ class Sendmails:
   def connect( self ):
     if self.ews:
       return True
-    print 'Getting new connection...'
+    print('Getting new connection...')
     if not self.host:
       self.server = smtplib.SMTP('localhost')
     else:
@@ -50,7 +50,7 @@ class Sendmails:
       try:
         self.server.starttls()
       except:
-        print 'Server doesn\'t support STARTTLS'
+        print('Server doesn\'t support STARTTLS')
       self.server.ehlo()
       if self.username and self.password: 
         self.server.login(self.username, self.password)
@@ -93,7 +93,7 @@ class Sendmails:
       if self.templates:
         tmpl = self.templates[count%len(self.templates)]
         e.html = tmpl['content']
-        print 'Using template: ' + tmpl['name']
+        print('Using template: ' + tmpl['name'])
       
       e = self.compile( e )
       
@@ -115,7 +115,7 @@ class Sendmails:
     self.disconnect()
 
     if randomints:
-      print "Assigned random ints saved to " + intsfile
+      print("Assigned random ints saved to " + intsfile)
 
 
   def compile( self, email ):
@@ -124,8 +124,8 @@ class Sendmails:
       for x in self.execute:
         x = email.compile_string(x)
         parts.append(x)
-      print 'Running: ' + ' '.join(parts)
-      print subprocess.check_output(parts)
+      print('Running: ' + ' '.join(parts))
+      print(subprocess.check_output(parts))
 
     # Compile header
     email.subject = email.compile_string(email.subject)
@@ -193,28 +193,28 @@ class Email:
     msg = MIMEMultipart()
     self.randomint = random.randint(1,9999999)
 
-    for k,v in variables.iteritems():
+    for k,v in variables.items():
       self.variables[k] = v
 
     namematch = re.compile( "\w{2,}\.\w{2,}" )
     self.variables['email'] = self.toheader.strip()
     self.variables['user'] = self.variables['email'].split('@')[0]
-    if 'name' not in self.variables.keys():
+    if 'name' not in list(self.variables.keys()):
       if namematch.match( self.variables['user'] ):
         self.variables['name'] = self.variables['user'].replace("."," ").title()
       else:
         self.variables['name'] = ''
 
     if len(self.variables['name'].split(' ')) >= 2:
-      if 'fname' not in self.variables.keys(): self.variables['fname'] = self.variables['name'].split(' ')[0]
-      if 'lname' not in self.variables.keys(): self.variables['lname'] = self.variables['name'].split(' ')[1]
+      if 'fname' not in list(self.variables.keys()): self.variables['fname'] = self.variables['name'].split(' ')[0]
+      if 'lname' not in list(self.variables.keys()): self.variables['lname'] = self.variables['name'].split(' ')[1]
     else:
-      if 'fname' not in self.variables.keys(): self.variables['fname'] = ''
-      if 'lname' not in self.variables.keys(): self.variables['lname'] = ''
+      if 'fname' not in list(self.variables.keys()): self.variables['fname'] = ''
+      if 'lname' not in list(self.variables.keys()): self.variables['lname'] = ''
   
   # Switch out place markers for variables
   def compile_string( self, txt ):
-    for name,val in self.variables.iteritems():
+    for name,val in self.variables.items():
       if type(val) == None: continue
       txt = txt.replace('{'+name+'}', str(val) )
 
@@ -257,7 +257,7 @@ class Email:
       filename = os.path.basename( a )
       part = MIMEBase('application', "octet-stream")
       part.set_payload(open(a, "rb").read())
-      Encoders.encode_base64(part)
+      encoders.encode_base64(part)
       part.add_header('Content-Disposition', 'attachment; filename="'+filename+'"')
       msg.attach(part)
     
@@ -275,7 +275,7 @@ class Email:
       m.is_read_receipt_requested = True
   
     if len( self.headers ) > 0:
-      print 'Custom mail headers not currently supported in EWS mode'
+      print('Custom mail headers not currently supported in EWS mode')
     # for k,v in self.headers:
     # This is fiddly, not enabled yet
 
@@ -341,10 +341,10 @@ def main():
   if args.ews: 
     sender.ews = args.ews
     if args.fromheader:
-      print 'NOTE: The "From:" header can\'t be spoofed over EWS'
+      print('NOTE: The "From:" header can\'t be spoofed over EWS')
     
     if args.text or args.textfile:
-      print 'NOTE: EWS methods are currently HTML only'
+      print('NOTE: EWS methods are currently HTML only')
 
   if args.dtformat: sender.dtformat = args.dtformat
   sender.reconnect = args.reconnect
@@ -358,7 +358,7 @@ def main():
 
   if args.attachment:
     if not os.path.isfile(args.attachment):
-      print 'Path to attachment ' + args.attachment + ' not found'
+      print('Path to attachment ' + args.attachment + ' not found')
     else:
       sender.attachments.append( args.attachment )
 
@@ -366,11 +366,11 @@ def main():
 
   if args.emails:
     emailsfile = args.emails
-    print 'Emails file: ', emailsfile
+    print('Emails file: ', emailsfile)
   elif args.email:
-    print 'Email: ', args.email
+    print('Email: ', args.email)
   elif args.csv:
-    print 'CSV: ', args.csv
+    print('CSV: ', args.csv)
 
 
   # Dictionary specific to an email
@@ -380,11 +380,11 @@ def main():
   sender.fromheader = args.fromheader
 
   if args.body:
-    print 'Body text file: ', args.body
+    print('Body text file: ', args.body)
   if args.textfile:
-    print 'Flat text file: ', args.textfile
-  print 'Subject: ', args.subject
-  print 'From: ', args.fromheader
+    print('Flat text file: ', args.textfile)
+  print('Subject: ', args.subject)
+  print('From: ', args.fromheader)
 
   attachmentmatch = re.compile( 'src="cid:([^"]+)"' )
 
@@ -401,7 +401,7 @@ def main():
   if args.bodydir:
     bd = os.path.expanduser(args.bodydir)
     if not os.path.isdir( bd ):
-      print "FAIL: " + bd + " doesn't exist"
+      print("FAIL: " + bd + " doesn't exist")
     files = [f for f in os.listdir(bd) if os.path.isfile(os.path.join(bd,f))]  # and (re.match('.+\.html$',f) != None ))]
     files = [f for f in files if re.match('.+\.html$',f) != None]
     files.sort()
@@ -412,7 +412,7 @@ def main():
         templates.append({'name':fn,'content':f.read()})
 
     if len( templates ) == 0:
-      print 'FAIL: No html files found in ' + bd
+      print('FAIL: No html files found in ' + bd)
     sender.templates = templates
 
   # Read in flat text
@@ -431,9 +431,9 @@ def main():
     with open(args.csv, 'rb') as csvfile:
       csvreader = csv.DictReader(csvfile)
       for row in csvreader:
-        for k in row.keys():
+        for k in list(row.keys()):
           if k not in markers: markers.append(k)
-        if 'email' not in row.keys(): continue
+        if 'email' not in list(row.keys()): continue
         recipients.append( row )
     
   elif args.emails:
