@@ -220,8 +220,8 @@ class Email:
 
     txt = txt\
       .replace("{date}",datetime.datetime.today().strftime(self.variables['dtformat']))\
-      .replace("{b64email}",base64.b64encode(self.variables['email']))\
-      .replace("{b64remail}",base64.b64encode(self.variables['email'])[::-1])
+      .replace("{b64email}",str(base64.b64encode(self.variables['email'].encode('utf-8'))))\
+      .replace("{b64remail}",str(base64.b64encode(self.variables['email'].encode('utf-8'))[::-1]))
     
     if re.search('{randomint}', txt ):
       txt = txt.replace("{randomint}",str(self.randomint))
@@ -428,7 +428,7 @@ def main():
   # Read in emails
   recipients = []
   if args.csv:
-    with open(args.csv, 'rb') as csvfile:
+    with open(args.csv, 'r') as csvfile:
       csvreader = csv.DictReader(csvfile)
       for row in csvreader:
         for k in list(row.keys()):
