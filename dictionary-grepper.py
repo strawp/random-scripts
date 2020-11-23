@@ -29,7 +29,7 @@ if not args.dictionary:
   sys.exit(2)
 
 if not os.path.isfile( args.dictionary ):
-  print( "Not found: " + args.dictionary )
+  print(( "Not found: " + args.dictionary ))
   sys.exit(2)
 
 
@@ -92,6 +92,6 @@ for p in pipes:
 
 out,err = procs[-1].communicate()
 
-print out
+print(out.decode('utf8'))
 
 
