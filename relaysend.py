@@ -18,11 +18,11 @@ if not args.toheader or not args.fromheader or not args.host:
   parser.print_usage()
   sys.exit(2)
 
-print 'From: ', args.fromheader
-print 'To: ', args.toheader
-print 'Host: ', args.host
+print('From: ', args.fromheader)
+print('To: ', args.toheader)
+print('Host: ', args.host)
 if args.message:
-  print 'Message: ', args.message
+  print('Message: ', args.message)
 
 msg = MIMEMultipart()
 
@@ -44,5 +44,5 @@ server.set_debuglevel(1)
 server.sendmail( args.fromheader, args.toheader, msg.as_string() )
 server.quit()
 
-print 'Done'
+print('Done')
 	
