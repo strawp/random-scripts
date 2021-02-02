@@ -26,8 +26,7 @@ def test_login( username, password, url, http1_1 = False ):
     if http1_1:
       cmd.append( '--http1.1' )
     cmd.append(url)
-    # print cmd
-    out = subprocess.check_output( cmd )
+    out = subprocess.check_output( cmd ).decode('utf8')
     m = re.findall( "HTTP\/\d.\d (\d{3})", out )
     for code in m:
       if code != "401":
