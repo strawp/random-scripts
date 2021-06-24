@@ -1,6 +1,9 @@
 # Decrypt prowin32.exe ASCII hex username / passwords that are "encrypted" when passed as startup parameters.
 # usage: python progress_decrypt.py oech1::deadbeefcafe
 
+# This will do the same thing: 
+# https://gchq.github.io/CyberChef/#recipe=From_Hex('Auto')XOR(%7B'option':'UTF8','string':'PROGRESS'%7D,'Standard',false)
+
 import sys
 
 def decrypt( src ):
