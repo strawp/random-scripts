@@ -37,6 +37,7 @@ class Sendmails:
   templates = []
   server = None
   session = None
+  emailindex = 1
 
   # Connect to SMTP server
   def connect( self ):
@@ -140,7 +141,8 @@ class Sendmails:
     return email
 
   def send( self, email ):
-    sys.stdout.write( "Sending to " + email.variables['email'] + "... " )
+    sys.stdout.write( "[" + str(self.emailindex) + "/" + str(len(self.recipients))+ "] Sending to " + email.variables['email'] + "... " )
+    self.emailindex += 1
     sys.stdout.flush()
     if self.ews:
       self.send_ews( email )
@@ -153,7 +155,12 @@ class Sendmails:
     if not self.server:
       self.connect()
     msg = email.get_mimemultipart()
-    self.server.sendmail( email.fromheader, email.variables['email'], msg.as_string() )
+    try:
+      self.server.sendmail( email.fromheader, email.variables['email'], msg.as_string() )
+    except e:
+      if self.delay:
+        time.sleep(self.delay)
+      send_smtp( email )
     return True
 
   def send_ews( self, email ):
@@ -192,14 +199,15 @@ class Email:
     self.toheader = variables['email']
     msg = MIMEMultipart()
     self.randomint = random.randint(1,9999999)
+    self.variables = {}
 
     for k,v in variables.items():
       self.variables[k] = v
 
-    namematch = re.compile( "\w{2,}\.\w{2,}" )
+    namematch = re.compile( r'\w{2,}\.\w{2,}' )
     self.variables['email'] = self.toheader.strip()
     self.variables['user'] = self.variables['email'].split('@')[0]
-    if 'name' not in list(self.variables.keys()):
+    if 'name' not in list(self.variables.keys()) or self.variables['name'] == '':
       if namematch.match( self.variables['user'] ):
         self.variables['name'] = self.variables['user'].replace("."," ").title()
       else:
@@ -211,6 +219,8 @@ class Email:
     else:
       if 'fname' not in list(self.variables.keys()): self.variables['fname'] = ''
       if 'lname' not in list(self.variables.keys()): self.variables['lname'] = ''
+    
+    # print( self.variables )
   
   # Switch out place markers for variables
   def compile_string( self, txt ):
