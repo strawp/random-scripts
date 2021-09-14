@@ -141,7 +141,7 @@ class Sendmails:
     return email
 
   def send( self, email ):
-    sys.stdout.write( "[" + str(self.emailindex) + "/" + str(len(self.recipients))+ "] Sending to " + email.variables['email'] + "... " )
+    sys.stdout.write( "[" + str(self.emailindex) + "/" + str(len(self.recipients))+ "] Sending to " + email.variables['email'] + " (randomint: "+str(email.randomint)+")... " )
     self.emailindex += 1
     sys.stdout.flush()
     if self.ews:
