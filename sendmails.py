@@ -141,7 +141,10 @@ class Sendmails:
     return email
 
   def send( self, email ):
-    sys.stdout.write( "[" + str(self.emailindex) + "/" + str(len(self.recipients))+ "] Sending to " + email.variables['email'] + " (randomint: "+str(email.randomint)+")... " )
+    status = "[" + str(self.emailindex) + "/" + str(len(self.recipients))+ "] Sending to " + email.variables['email']
+    if email.usesrandomint: status += " (randomint: "+str(email.randomint)+")"
+    status += "... "
+    sys.stdout.write( status ) 
     self.emailindex += 1
     sys.stdout.flush()
     if self.ews:
@@ -230,8 +233,8 @@ class Email:
 
     txt = txt\
       .replace("{date}",datetime.datetime.today().strftime(self.variables['dtformat']))\
-      .replace("{b64email}",str(base64.b64encode(self.variables['email'].encode('utf-8'))))\
-      .replace("{b64remail}",str(base64.b64encode(self.variables['email'].encode('utf-8'))[::-1]))
+      .replace("{b64email}",base64.b64encode(self.variables['email'].encode('utf-8')).decode('utf8'))\
+      .replace("{b64remail}",base64.b64encode(self.variables['email'].encode('utf-8')).decode('utf8')[::-1])
     
     if re.search('{randomint}', txt ):
       txt = txt.replace("{randomint}",str(self.randomint))
