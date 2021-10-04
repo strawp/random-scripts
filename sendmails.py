@@ -403,7 +403,7 @@ def main():
 
   # Read in body
   if args.body:
-    with open (args.body,"r") as file:
+    with open (args.body,"r",encoding="utf8",errors="ignore") as file:
       html = file.read() # .replace('\n','')
   else:
     html = None
