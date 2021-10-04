@@ -20,4 +20,7 @@ Info-leak and dictionary attack tool for NTLM authed web resources.
 
 Take a large password dictionary and apply filters to match your target password policy.
 
+## basic-batch.py
+
+Password spray against various basic auth URLs
 
