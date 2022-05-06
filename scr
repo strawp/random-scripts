@@ -7,6 +7,12 @@
 op=$1
 defaultfolder="${HOME}/working/screenshots"
 convertpattern='s/\/\./\//g; s/\.txt\(:\|$\)/\1/'
+  
+if [ -n "$3" ]; then
+  folder=$3
+else
+  folder=$defaultfolder
+fi
 
 case $op in
 ocr)
@@ -14,67 +20,59 @@ ocr)
   # text saved in hidden file next to image
   
   fn=$2
-  txt=$(dirname $fn)/.$(basename $fn)
+  txt=$(dirname "$fn")/.$(basename "$fn")
 
-  if [ -f "$txt" ]; then
+  echo "Doing OCR on $fn..."
+
+  if [ -f "$txt.txt" ]; then
     echo "Already got a txt file"
     exit 1
   fi
 
-  if [[ ! $fn =~ \.png$ ]] || [[ $fn =~ \.lg\.png$ ]]; then
+  if [[ ! $fn =~ \.(png|jpg)$ ]] || [[ $fn =~ \.lg\.png$ ]]; then
     echo "Not a screenshot"
     exit 1
   fi
   
   
   # Increase size to improve OCR accuracy
-  convert -limit memory 8000MB -modulate 100,0 -resize 400% $fn $fn.lg.png
+  convert -limit memory 8000MB -modulate 100,0 -resize 400% "$fn" "$fn.lg.png"
 
   # OCR to text file
-  tesseract $fn.lg.png $txt
+  tesseract "$fn.lg.png" "$txt"
 
   # Write text to file metadata
-  exiftool -overwrite_original -comment="$(cat $txt.txt)" $fn
-  exiftool -overwrite_original -Caption-Abstract="$(cat $txt.txt)" $fn
+  exiftool -overwrite_original -comment="$(cat "$txt.txt")" "$fn"
+  exiftool -overwrite_original -Caption-Abstract="$(cat "$txt.txt")" "$fn"
 
   # Delete large version
-  rm $fn.lg.png
+  rm "$fn.lg.png"
+  ;;
+
+ocrall|oa)
+  # OCR all images in the given dir
+  ls "$folder" | while read f; do $0 ocr "$folder/$f"; done
   ;;
 
 search|s)
   # Find txt in a screenshot dir
   search=$2
-  if [ -n "$3" ]; then
-    folder=$3
-  else
-    folder=$defaultfolder
-  fi
-  grep -d skip -i "$search" $folder/.* | sed "$convertpattern" 2>/dev/null
+  grep -d skip -i "$search" "$folder"/.* | sed "$convertpattern" 2>/dev/null
   ;;
 
 open|o)
   # Open each matching image
-  $0 search "$2" | cut -d: -f 1 | sort -u | while read f; do xdg-open "$f"; done
+  $0 search "$2" "$folder" | cut -d: -f 1 | sort -u | while read f; do xdg-open "$f"; done
   ;;
 
 cat|c)
   # Dump out all text for matching images
-  if [ -n "$3" ]; then
-    folder=$3
-  else
-    folder=$defaultfolder
-  fi
-  grep -l -d skip -i "$2" $folder/.* | sort -u | while read f; do echo $f | sed "$convertpattern"; cat $f; done 2>/dev/null
+  grep -l -d skip -i "$2" "$folder"/.* | sort -u | while read f; do echo $f | sed "$convertpattern"; cat $f; done 2>/dev/null
   ;;
 
 figure|fig|f)
   # Output base64 encoded HTML figures of each image matching
-  if [ -n "$3" ]; then
-    folder=$3
-  else
-    folder=$defaultfolder
-  fi
-  $0 search "$2" | cut -d: -f 1 | sort -u | while read f; 
+  $0 search "$2" "$folder" | cut -d: -f 1 | sort -u | while read f; 
   do 
     mimetype=$(file -bN --mime-type "$f")
     content=$(base64 -w0 < "$f")
