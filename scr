@@ -2,7 +2,7 @@
 # Screenshot OCR tool
 # requires: imagemagick, tesseract-ocr
 # recommended to be installed with incron
-# e.g. /home/iain/working/screenshots IN_CLOSE_WRITE /home/iain/bin/scrocr ocr $@/$#
+# e.g. /home/iain/working/screenshots IN_CLOSE_WRITE /home/iain/bin/scr ocr $@/$#
 
 op=$1
 defaultfolder="${HOME}/working/screenshots"
@@ -29,7 +29,9 @@ ocr)
     exit 1
   fi
 
-  if [[ ! $fn =~ \.(png|jpg)$ ]] || [[ $fn =~ \.lg\.png$ ]]; then
+  fnnocase=$(echo "$fn" | tr A-Z a-z)
+
+  if [[ ! $fnnocase =~ \.(png|jpg)$ ]] || [[ $fn =~ \.lg\.png$ ]]; then
     echo "Not a screenshot"
     exit 1
   fi
