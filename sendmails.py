@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Send an HTML email to all addresses in a txt file
 
-import argparse, sys, smtplib, datetime, re, os, random, base64, time, subprocess, csv, html2text
+import argparse, sys, smtplib, datetime, re, os, random, base64, time, subprocess, csv, html2text, uuid
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
@@ -160,7 +160,7 @@ class Sendmails:
     msg = email.get_mimemultipart()
     try:
       self.server.sendmail( email.fromheader, email.variables['email'], msg.as_string() )
-    except e:
+    except:
       if self.delay:
         time.sleep(self.delay)
       send_smtp( email )
@@ -250,7 +250,13 @@ class Email:
       msg["Disposition-Notification-To"] = self.readreceipt
     for k,v in self.headers:
       msg[k] = v
-    
+
+    msgid = re.sub(r'[^@]+@',str(uuid.uuid4()) + '@',self.fromheader)
+    msgid = re.sub(r'>$','',msgid)
+    for k in ['messageId','Message-ID']:
+      if k not in msg.keys():
+        msg[k] = msgid
+
     if self.html:
       msg.attach(MIMEText( self.html, "html" ))
     # if self.text:
