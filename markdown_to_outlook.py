@@ -22,6 +22,9 @@ html = html.replace('</p>','</p>\n<p>&nbsp;</p>')
 # Add Outlook tags
 html = html.replace(r'<p>', r'<p class="MsoNormal"><span style="font-family:&quot;Nirmala UI&quot;,sans-serif;color:black">').replace( r'</p>', r'</span></p>' )
 
+# List items
+html = html.replace('<li>','<li class="MsoNormal">')
+
 # Add HTML header stuff
 html = '''
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:m="http://schemas.microsoft.com/office/2004/12/omml" xmlns="http://www.w3.org/TR/REC-html40">
