@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Send an HTML email to all addresses in a txt file
+# Test if an SMTP service supports open relay
 
 import argparse, sys, smtplib, datetime, re
 from email.mime.multipart import MIMEMultipart
