@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 # Password spray basic auth URLs
 
-import argparse, sys, re, time, signal, requests
+import argparse, sys, re, time, signal, requests, urllib3
 import os.path
 from urllib.parse import urlparse
+
+# Turn off TLS verification warnings
+urllib3.disable_warnings()
 
 def test_login( username, password, url, proxy=None ):
   username = username.strip()
@@ -59,6 +62,7 @@ def main():
   parser.add_argument("-s", "--same", action="store_true", help="Try password=username")
   parser.add_argument("-b", "--blank", action="store_true", help="Try blank password")
   parser.add_argument("-1", "--quitonsuccess", action="store_true", help="Stop as soon as the first credential is found")
+  parser.add_argument("-n", "--noskip", action="store_true", help="Don't skip a user after finding valid creds")
   parser.add_argument("--proxy", help="URL of HTTP proxy to send requests through, e.g. http://localhost:8080")
   parser.add_argument("url", help="URL or file containing list of URLs protected by basic auth")
   args = parser.parse_args()
@@ -123,11 +127,11 @@ def main():
       for line in f.read().splitlines():
         if line == '':
           continue
-        creds = line.split(':')
-        if len( creds ) < 2:
+        c = line.split(':')
+        if len( c ) < 2:
           print('No username / pass combination in: ' + line)
           continue
-        creds.append({ 'user':creds[0], 'pass':':'.join(creds[1:]) })
+        creds.append({ 'user':c[0], 'pass':':'.join(c[1:]) })
    
   # Loop in the order users, urls, passwords
   # i.e.
@@ -194,13 +198,14 @@ def main():
     count+=1
 
     # Check they're not already found
-    for f in found:
-      if f["user"] == item["user"] and f["url"] == item["url"]:
-        print('[-] Skipping already found user:' + item['user'] + ' for ' + item['url'])
-        skip = True
+    if not args.noskip:
+      for f in found:
+        if f["user"] == item["user"] and f["url"] == item["url"]:
+          print('[-] Skipping already found user:' + item['user'] + ' for ' + item['url'])
+          skip = True
 
-    if skip:
-      continue
+      if skip:
+        continue
 
     # Test login
     print("[*] Testing " + item['user'] + " : " + item['pass'] + " ("+item['url']+")") 
