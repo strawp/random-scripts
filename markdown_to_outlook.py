@@ -25,6 +25,9 @@ html = html.replace(r'<p>', r'<p class="MsoNormal"><span style="font-family:&quo
 # List items
 html = html.replace('<li>','<li class="MsoNormal">')
 
+# Divs
+html = html.replace('<div>','<div class="MsoNormal">')
+
 # Add HTML header stuff
 html = '''
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:m="http://schemas.microsoft.com/office/2004/12/omml" xmlns="http://www.w3.org/TR/REC-html40">
@@ -63,8 +66,14 @@ w\:* {behavior:url(#default#VML);}
 @font-face
 	{font-family:Roboto;}
 /* Style Definitions */
+p span, li span, div span { display: none; }
+p.MsoNormal span, li.MsoNormal span, div.MsoNormal span
+{
+  display: inline !important;
+}
 p.MsoNormal, li.MsoNormal, div.MsoNormal
-	{margin:0cm;
+{
+  margin:0cm;
 	font-size:11.0pt;
 	font-family:"Calibri",sans-serif;}
 a:link, span.MsoHyperlink
