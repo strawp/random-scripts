@@ -31,6 +31,7 @@ def get_allowed_hosts( domain, recurse=True ):
   modifiers = []
   for line in get_dig_answer(domain,'txt'):
     if 'v=spf' in line:
+      print(domain, line)
       for item in line.split(' '):
         item = item.lower()
 
@@ -45,12 +46,16 @@ def get_allowed_hosts( domain, recurse=True ):
           hosts.append(get_allowed_hosts(d))
 
         # Specified IP
-        elif item.startswith('ip'):
+        elif item.startswith('ip') or item.startswith('a:'):
           hosts.append(item)
 
         # References to other DNS records
-        elif item in ['mx','a','ptr']:
-          hosts += get_dig_answer( domain, item )
+        elif item == 'mx':
+          hosts+= get_dig_answer( domain, 'mx' )
+
+        elif item.split(':')[0] == 'ptr':
+          t,d = item.split(':')
+          hosts += get_allowed_hosts( d )
 
         # EXISTS
         elif item.startswith('exists:'):
