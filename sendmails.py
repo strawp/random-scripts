@@ -253,6 +253,7 @@ class Email:
 
     msgid = re.sub(r'[^@]+@',str(uuid.uuid4()) + '@',self.fromheader)
     msgid = re.sub(r'>$','',msgid)
+    msgid = '<' + msgid + '>'
     for k in ['messageId','Message-ID']:
       if k not in msg.keys():
         msg[k] = msgid
