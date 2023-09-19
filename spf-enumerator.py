@@ -31,7 +31,7 @@ def get_allowed_hosts( domain, recurse=True ):
   modifiers = []
   for line in get_dig_answer(domain,'txt'):
     if 'v=spf' in line:
-      print(domain, line)
+      # print(domain, line)
       for item in line.split(' '):
         item = item.lower()
 
