@@ -24,3 +24,6 @@ Take a large password dictionary and apply filters to match your target password
 
 Password spray against various basic auth URLs
 
+## shell.py
+
+Finding a python interpreter on an endpoint is increasingly common and great for bypassing allow-listing. This provides a reasonably powerful CLI to do filesystem stuff, port scanning and process injection. Very useful!
