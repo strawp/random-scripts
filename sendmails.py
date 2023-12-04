@@ -38,6 +38,7 @@ class Sendmails:
   server = None
   session = None
   emailindex = 1
+  debug = False
 
   # Connect to SMTP server
   def connect( self ):
@@ -48,6 +49,7 @@ class Sendmails:
       self.server = smtplib.SMTP('localhost')
     else:
       self.server = smtplib.SMTP(self.host, self.port)
+      if self.debug: self.server.set_debuglevel(1)
       try:
         self.server.starttls()
       except:
@@ -342,6 +344,7 @@ def main():
   parser.add_argument("--reconnect", default=5, type=int, help="Reconnect to SMTP host after this many email sends")
   parser.add_argument("-a", "--attachment", help="Filename to add as an attachment")
   parser.add_argument("-x", "--execute", action="append", help="Execute this command before sending each email (stack to create complex commands, e.g. -x 'script.sh' -x 'Email:{email}')")
+  parser.add_argument("--debug", action="store_true", help="Output debug info")
   args = parser.parse_args()
   
   if not ( args.body or args.bodydir or args.textfile ) or not args.subject or ( not args.ews and not args.fromheader):
@@ -353,11 +356,13 @@ def main():
     sys.exit(2)
 
   sender = Sendmails()
+  sender.debug = args.debug
 
   if args.host and not args.port:
     args.port = 587
   sender.port = args.port
   sender.host = args.host
+  print('SMTP server:', args.host + ':' + str( args.port ) )
   if args.ews: 
     sender.ews = args.ews
     if args.fromheader:
