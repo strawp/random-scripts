@@ -12,6 +12,7 @@ parser.add_argument("-t", "--toheader", help="To address")
 parser.add_argument("-f", "--fromheader", help="From address")
 parser.add_argument("-c", "--ccheader", help="CC address")
 parser.add_argument("-g", "--host", help="SMTP host")
+parser.add_argument("-p", "--port", help="SMTP port")
 parser.add_argument("-m", "--message", help="An optional message to append to the generated email")
 args = parser.parse_args()
 
@@ -42,8 +43,12 @@ msgText = MIMEText( html, "html" )
 msg.attach(msgText)
 
 # Send email
-server = smtplib.SMTP(args.host)
+server = smtplib.SMTP(args.host,args.port)
 server.set_debuglevel(1)
+try:
+  server.starttls()
+except:
+  print('Server doesn\'t support STARTTLS')
 server.sendmail( args.fromheader, args.toheader, msg.as_string() )
 server.quit()
 
