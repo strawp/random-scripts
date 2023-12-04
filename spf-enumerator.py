@@ -15,14 +15,18 @@ def get_dig_answer( domain, querytype ):
       if not m: continue
       s = m.group(1)
     if querytype == 'mx':
-      s = s[:-2]
+      s = s.strip()[:-1]
     rtn.append(s)
   return rtn
 
 def domain_exists( domain ):
-  if 'NXDOMAIN' in subprocess.check_output(['host',domain]).decode('utf8'):
+  try:
+    if 'NXDOMAIN' in subprocess.check_output(['host',domain]).decode('utf8'):
+      return False
+    return True
+  except:
+    print('Error looking up domain', domain)
     return False
-  return True
 
 def get_allowed_hosts( domain, recurse=True ):
   rtn = {domain:[]}
@@ -56,6 +60,10 @@ def get_allowed_hosts( domain, recurse=True ):
         elif item.split(':')[0] == 'ptr':
           t,d = item.split(':')
           hosts += get_allowed_hosts( d )
+
+        elif item.startswith('mx:'):
+          t,d = item.split(':')
+          hosts+= get_dig_answer( d, 'mx' )
 
         # EXISTS
         elif item.startswith('exists:'):
