@@ -25,8 +25,12 @@ def test_login( username, password, url, http1_1 = False ):
     cmd = ["curl", "-s", "-I", "--ntlm", "--user", username + ":" + password, "-k"] 
     if http1_1:
       cmd.append( '--http1.1' )
+    if args.cert and args.key:
+      cmd.extend(['--cert',args.cert,'--key',args.key])
     cmd.append(url)
     out = subprocess.check_output( cmd ).decode('utf8')
+    if args.debug:
+      print( out )
     m = re.findall( "HTTP\/\d.\d (\d{3})", out )
     for code in m:
       if code != "401":
@@ -70,7 +74,10 @@ parser.add_argument("-i", "--info", action="store_true", help="Exploit NTLM info
 parser.add_argument("-s", "--same", action="store_true", help="Try password=username")
 parser.add_argument("-b", "--blank", action="store_true", help="Try blank password")
 parser.add_argument("-1", "--quitonsuccess", action="store_true", help="Stop as soon as the first credential is found")
+parser.add_argument("--debug", action="store_true", help="Output debug info")
 parser.add_argument("--http1_1", action="store_true", help="Force use of HTTP 1.1 (if you're getting \"curl call failed\" errors due to HTTP2)")
+parser.add_argument("--cert", nargs='?', help="Client side PEM cert file")
+parser.add_argument("--key", nargs='?', help="Client side PEM key file")
 parser.add_argument("url", help="URL of NTLM protected resource, e.g. https://webmail.company.com/ews/exchange.asmx")
 args = parser.parse_args()
 
