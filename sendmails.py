@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Send an HTML email to all addresses in a txt file
 
-import argparse, sys, smtplib, datetime, re, os, random, base64, time, subprocess, csv, html2text, uuid
+import argparse, sys, smtplib, datetime, re, os, random, base64, time, subprocess, csv, uuid # , html2text
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
@@ -139,7 +139,7 @@ class Sendmails:
     if email.text:
       email.text = email.compile_string( email.text )
     else:
-      email.text = html2text.html2text( email.html )
+      email.text = '' # html2text.html2text( email.html )
     return email
 
   def send( self, email ):
@@ -428,7 +428,7 @@ def main():
     if not os.path.isdir( bd ):
       print("FAIL: " + bd + " doesn't exist")
     files = [f for f in os.listdir(bd) if os.path.isfile(os.path.join(bd,f))]  # and (re.match('.+\.html$',f) != None ))]
-    files = [f for f in files if re.match('.+\.html$',f) != None]
+    files = [f for f in files if re.match(r'.+\.html$',f) != None]
     files.sort()
     templates = []
     for fn in files:
