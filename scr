@@ -8,8 +8,8 @@ op=$1
 defaultfolder="${HOME}/working/screenshots"
 convertpattern='s/\/\./\//g; s/\.txt\(:\|$\)/\1/'
   
-if [ -n "$3" ]; then
-  folder=$3
+if [ -n "$2" ]; then
+  folder=$2
 else
   folder=$defaultfolder
 fi
@@ -31,7 +31,7 @@ ocr)
 
   fnnocase=$(echo "$fn" | tr A-Z a-z)
 
-  if [[ ! $fnnocase =~ \.(png|jpg)$ ]] || [[ $fn =~ \.lg\.png$ ]]; then
+  if [[ ! $fnnocase =~ \.(png|jpe?g)$ ]] || [[ $fn =~ \.lg\.png$ ]]; then
     echo "Not a screenshot"
     exit 1
   fi
