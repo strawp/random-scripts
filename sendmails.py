@@ -12,7 +12,7 @@ from email.mime.image import MIMEImage
 varnames = ['email','name','fname','lname','user']
 markers = []
 markers.extend(varnames)
-markers.extend(['date','b64email','b64remail','randomint'])
+markers.extend(['date','b64email','b64remail','randomint','initials'])
 
 
 class Sendmails:
@@ -54,9 +54,12 @@ class Sendmails:
         self.server.starttls()
       except:
         print('Server doesn\'t support STARTTLS')
-      self.server.ehlo()
+      # self.server.ehlo()
       if self.username and self.password: 
-        self.server.login(self.username, self.password)
+        try:
+          self.server.login(self.username, self.password)
+        except Exception as e:
+          print( e )
     return True
 
   def disconnect( self ):
@@ -162,10 +165,12 @@ class Sendmails:
     msg = email.get_mimemultipart()
     try:
       self.server.sendmail( email.fromheader, email.variables['email'], msg.as_string() )
-    except:
+    except smtplib.SMTPServerDisconnected as e:
+      print( e )
+      self.connect()
       if self.delay:
         time.sleep(self.delay)
-      send_smtp( email )
+      self.send_smtp( email )
     return True
 
   def send_ews( self, email ):
@@ -224,6 +229,8 @@ class Email:
     else:
       if 'fname' not in list(self.variables.keys()): self.variables['fname'] = ''
       if 'lname' not in list(self.variables.keys()): self.variables['lname'] = ''
+
+    self.variables['initials'] = ( self.variables['fname'][:0] + self.variables['lname'][:0] ).upper()
     
     # print( self.variables )
   
@@ -335,7 +342,7 @@ def main():
   parser.add_argument("-f", "--fromheader", help="From address (address or 'name <address>')")
   parser.add_argument("-r", "--readreceipt", help="Read receipt address (same format as from/to headers")
   parser.add_argument("-H", "--header", action="append", help="Add any number of custom headers")
-  parser.add_argument("-g", "--host", help="SMTP host")
+  parser.add_argument("-g", "--host", default='localhost', help="SMTP host")
   parser.add_argument("-P", "--port", help="SMTP port")
   parser.add_argument("-u", "--username", help="SMTP / EWS username")
   parser.add_argument("-p", "--password", help="SMTP / EWS password")
