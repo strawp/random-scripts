@@ -230,9 +230,7 @@ class Email:
       if 'fname' not in list(self.variables.keys()): self.variables['fname'] = ''
       if 'lname' not in list(self.variables.keys()): self.variables['lname'] = ''
 
-    self.variables['initials'] = ( self.variables['fname'][:0] + self.variables['lname'][:0] ).upper()
-    
-    # print( self.variables )
+    self.variables['initials'] = ( self.variables['fname'][0] + self.variables['lname'][0] ).upper()
   
   # Switch out place markers for variables
   def compile_string( self, txt ):
@@ -339,6 +337,7 @@ def main():
   parser.add_argument("-t", "--text", action="store_true", help="Add a plain text part to the email converted from the HTML body (use if the target mail client doesn't display HTML inline, e.g. IBM Notes might not)")
   parser.add_argument("-T", "--textfile", help="Add a plain text part to the email taken from the specified text file") 
   parser.add_argument("-s", "--subject", help="Subject line of email")
+  parser.add_argument("-v", "--variables", nargs='*', help="Set arbitrary defaults for variables e.g. -v foo=bar somevar=somevalue")
   parser.add_argument("-f", "--fromheader", help="From address (address or 'name <address>')")
   parser.add_argument("-r", "--readreceipt", help="Read receipt address (same format as from/to headers")
   parser.add_argument("-H", "--header", action="append", help="Add any number of custom headers")
@@ -405,8 +404,12 @@ def main():
     print('CSV: ', args.csv)
 
 
-  # Dictionary specific to an email
+  # Default variables
   variables = {}
+  if args.variables:
+    for var in args.variables:
+      parts = var.split('=')
+      variables[parts[0]] = '='.join(parts[1:])
 
   sender.subject = args.subject
   sender.fromheader = args.fromheader
@@ -466,7 +469,9 @@ def main():
         for k in list(row.keys()):
           if k not in markers: markers.append(k)
         if 'email' not in list(row.keys()): continue
-        recipients.append( row )
+        v = variables.copy()
+        v.update(row)
+        recipients.append( v )
     
   elif args.emails:
     with open(emailsfile) as f:
